@@ -169,9 +169,15 @@ export class GameManager {
       else if (this.state === "PAUSED") this.resume();
     }
     if (e.code === "KeyE" && this.state === "PLAYING") {
-      this.tryInteract();
+      this.interact();
     }
   };
+
+  /** E調べる操作。タッチUIのボタンからも呼び出される公開エントリーポイント */
+  interact() {
+    if (this.state !== "PLAYING") return;
+    this.tryInteract();
+  }
 
   private tryInteract() {
     const runtime = this.stageManager.current;

@@ -10,6 +10,7 @@ import ResultScreen from "./ui/ResultScreen";
 import EndingScreen from "./ui/EndingScreen";
 import HowToPlay from "./ui/HowToPlay";
 import DebugMenu from "./ui/DebugMenu";
+import TouchControls from "./ui/TouchControls";
 
 export default function App() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -136,6 +137,10 @@ export default function App() {
           pointerLockLost={pointerLockLost && gameState === "PLAYING"}
           onRequestLock={() => gameManagerRef.current?.playerController.requestLock()}
         />
+      )}
+
+      {gameState === "PLAYING" && gameManagerRef.current && (
+        <TouchControls gameManager={gameManagerRef.current} onPause={() => gameManagerRef.current?.pause()} />
       )}
 
       {gameState === "PAUSED" && !showSettings && (

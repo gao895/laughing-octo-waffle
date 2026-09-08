@@ -32,16 +32,40 @@ export class PlayerController {
   private dashCooldownTimer = 0;
   private footstepDistance = 0;
 
+  // スマートフォン向け仮想入力（仮想スティック・ドラッグ視点・ダッシュボタン）
+  private virtualMoveX = 0;
+  private virtualMoveZ = 0;
+  private virtualDash = false;
+
   onFootstep: (() => void) | null = null;
   onLockChange: ((locked: boolean) => void) | null = null;
 
+  private applyLookDelta(dx: number, dy: number) {
+    const s = 0.0022 * (0.3 + this.sensitivity * 1.4);
+    this.yaw -= dx * s;
+    this.pitch -= dy * s;
+    this.pitch = Math.max(-Math.PI / 2.3, Math.min(Math.PI / 2.3, this.pitch));
+  }
+
   private handleMouseMove = (e: MouseEvent) => {
     if (!this.locked) return;
-    const s = 0.0022 * (0.3 + this.sensitivity * 1.4);
-    this.yaw -= e.movementX * s;
-    this.pitch -= e.movementY * s;
-    this.pitch = Math.max(-Math.PI / 2.3, Math.min(Math.PI / 2.3, this.pitch));
+    this.applyLookDelta(e.movementX, e.movementY);
   };
+
+  /** タッチドラッグによる視点操作（Pointer Lockが使えないiOS等で使用） */
+  addLookDelta(dx: number, dy: number) {
+    this.applyLookDelta(dx, dy);
+  }
+
+  /** 仮想スティックの入力（-1〜1の正規化済みベクトル）を設定する */
+  setVirtualMove(x: number, z: number) {
+    this.virtualMoveX = x;
+    this.virtualMoveZ = z;
+  }
+
+  setVirtualDash(active: boolean) {
+    this.virtualDash = active;
+  }
 
   private handleKeyDown = (e: KeyboardEvent) => {
     this.keys.add(e.code);
@@ -68,13 +92,20 @@ export class PlayerController {
     this.sensitivity = v;
   }
 
+  /** Pointer Lock APIが存在しない環境（iOS Safari等）でも安全に呼べる */
   requestLock() {
+    if (!this.domElement.requestPointerLock) return;
     if (document.pointerLockElement !== this.domElement) {
-      this.domElement.requestPointerLock();
+      try {
+        this.domElement.requestPointerLock();
+      } catch {
+        // 一部ブラウザではユーザー操作の連鎖が切れていると例外になるため無視する
+      }
     }
   }
 
   exitLock() {
+    if (!document.exitPointerLock) return;
     if (document.pointerLockElement === this.domElement) {
       document.exitPointerLock();
     }
@@ -110,10 +141,14 @@ export class PlayerController {
     if (left) moveX -= 1;
     if (right) moveX += 1;
 
+    // 仮想スティック（スマートフォン）の入力を合成する
+    moveX += this.virtualMoveX;
+    moveZ += this.virtualMoveZ;
+
     const moving = moveX !== 0 || moveZ !== 0;
 
     // ダッシュ処理
-    const wantsDash = this.keys.has("ShiftLeft") || this.keys.has("ShiftRight");
+    const wantsDash = this.keys.has("ShiftLeft") || this.keys.has("ShiftRight") || this.virtualDash;
     if (wantsDash && moving && this.dashTimer <= 0 && this.dashCooldownTimer <= 0) {
       this.dashTimer = DASH_DURATION;
       this.dashCooldownTimer = DASH_COOLDOWN;

@@ -22,6 +22,10 @@ export class AudioManager {
   init(settings: SettingsData) {
     if (this.ctx) return;
     this.ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    // iOS Safari ではユーザー操作起点でもsuspended状態で生成されることがあるため明示的に再開する
+    if (this.ctx.state === "suspended") {
+      void this.ctx.resume();
+    }
     this.masterGain = this.ctx.createGain();
     this.masterGain.connect(this.ctx.destination);
 

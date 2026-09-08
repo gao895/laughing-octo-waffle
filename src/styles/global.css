@@ -25,18 +25,22 @@ body,
   font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", system-ui, sans-serif;
   overflow: hidden;
   user-select: none;
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-text-size-adjust: none;
 }
 
 .app-root {
   position: relative;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100dvh;
   background: #000;
 }
 
 .game-canvas-container {
   position: absolute;
   inset: 0;
+  touch-action: none;
 }
 
 .game-canvas-container canvas {
@@ -471,4 +475,106 @@ body,
 
 .debug-menu button:hover {
   background: #1c1c1c;
+}
+
+/* ---------- タッチ操作（スマートフォン向け） ---------- */
+.touch-controls {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .touch-controls {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+  }
+
+  .hud-crosshair-hint {
+    display: none;
+  }
+
+  .hud-mistakes {
+    bottom: max(128px, calc(env(safe-area-inset-bottom) + 128px));
+    right: max(30px, env(safe-area-inset-right));
+  }
+}
+
+.touch-look-area {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  z-index: 1;
+}
+
+.touch-joystick-base {
+  position: absolute;
+  left: max(22px, env(safe-area-inset-left));
+  bottom: max(26px, env(safe-area-inset-bottom));
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.05);
+  touch-action: none;
+  z-index: 2;
+}
+
+.touch-joystick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  margin-left: -22px;
+  margin-top: -22px;
+  border-radius: 50%;
+  background: rgba(232, 230, 225, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.touch-btn {
+  position: absolute;
+  z-index: 2;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(5, 5, 6, 0.55);
+  color: var(--fg);
+  font-family: inherit;
+  letter-spacing: 0.05em;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.touch-btn:active {
+  background: rgba(181, 18, 46, 0.4);
+  border-color: var(--accent-dim);
+}
+
+.touch-btn-interact {
+  right: max(26px, env(safe-area-inset-right));
+  bottom: max(38px, env(safe-area-inset-bottom));
+  width: 72px;
+  height: 72px;
+  font-size: 1rem;
+}
+
+.touch-btn-dash {
+  right: max(110px, calc(env(safe-area-inset-right) + 92px));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  width: 56px;
+  height: 56px;
+  font-size: 0.6rem;
+}
+
+.touch-btn-pause {
+  top: max(34px, calc(env(safe-area-inset-top) + 22px));
+  right: max(12px, env(safe-area-inset-right));
+  width: 38px;
+  height: 38px;
+  font-size: 0.9rem;
+  border-radius: 8px;
 }
