@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import type { StageRuntime } from "../../game/StageManager";
-import type { CorridorBounds } from "../../game/PlayerController";
 import { LightingManager, type CorridorLight } from "../../three/LightingManager";
 import type { AudioManager } from "../../game/AudioManager";
 import {
@@ -13,18 +12,13 @@ import {
   buildHumanSilhouette,
   buildUmbrella,
 } from "../../three/EnvironmentManager";
+import { buildCorridorShell, addCorridorLights, buildDoorAndSign, gaussianBump } from "../shared/corridorBuilder";
 
 const Z_MIN = -16.6;
 const Z_MAX = 11;
 const SPAWN_Z = 8;
 const DOOR_Z = -16;
 const BASE_HALF_WIDTH = 1.15;
-const SEGMENT_LENGTH = 1;
-
-function gaussianBump(z: number, center: number, sigma: number, amp: number) {
-  const d = z - center;
-  return amp * Math.exp(-(d * d) / (2 * sigma * sigma));
-}
 
 function halfWidthAt(z: number): number {
   return (
@@ -35,9 +29,6 @@ function halfWidthAt(z: number): number {
 }
 
 export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audio: AudioManager): StageRuntime {
-  const group = new THREE.Group();
-  group.name = "stage01";
-
   // --- マテリアル/テクスチャ ---
   const wallTex = makeConcreteTexture("#26282e");
   wallTex.repeat.set(1, 2);
@@ -49,47 +40,19 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   const ceilMat = new THREE.MeshStandardMaterial({ map: ceilTex, roughness: 1 });
 
   // --- 通路本体をセグメントごとに生成（可変幅） ---
-  for (let z = Z_MIN; z < Z_MAX; z += SEGMENT_LENGTH) {
-    const centerZ = z + SEGMENT_LENGTH / 2;
-    const hw = halfWidthAt(centerZ);
-
-    const floor = new THREE.Mesh(new THREE.BoxGeometry(hw * 2, 0.1, SEGMENT_LENGTH + 0.02), floorMat);
-    floor.position.set(0, -0.05, centerZ);
-    floor.receiveShadow = true;
-
-    const ceiling = new THREE.Mesh(new THREE.BoxGeometry(hw * 2, 0.1, SEGMENT_LENGTH + 0.02), ceilMat);
-    ceiling.position.set(0, 2.6, centerZ);
-
-    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.6, SEGMENT_LENGTH + 0.02), wallMat);
-    leftWall.position.set(-hw - 0.075, 1.3, centerZ);
-
-    const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.6, SEGMENT_LENGTH + 0.02), wallMat);
-    rightWall.position.set(hw + 0.075, 1.3, centerZ);
-
-    group.add(floor, ceiling, leftWall, rightWall);
-  }
+  const { group, bounds } = buildCorridorShell({ zMin: Z_MIN, zMax: Z_MAX, halfWidthAt, wallMat, floorMat, ceilMat });
+  group.name = "stage01";
 
   // --- 天井の蛍光灯 ---
   const lightZs = [6, 3, -1, -4.5, -8, -12, -15];
-  const lightEntries: CorridorLight[] = lightZs.map((z) =>
-    lighting.addCorridorLight(scene, new THREE.Vector3(0, 2.3, z), 5.5)
-  );
+  const lightEntries: CorridorLight[] = addCorridorLights(scene, lighting, lightZs);
   const flickerLight = lightEntries[4]; // z = -8 のライト（room2付近）
 
   // --- 出口扉と看板 ---
-  const doorFrame = new THREE.Mesh(
-    new THREE.BoxGeometry(1.4, 2.2, 0.12),
-    new THREE.MeshStandardMaterial({ color: 0x3a2f26, roughness: 0.6 })
-  );
-  doorFrame.position.set(0, 1.1, DOOR_Z - 0.3);
-  group.add(doorFrame);
-
-  let signTexNormal = makeSignTexture("EXIT", "#ff2a2a");
-  let signTexAnomaly = makeSignTexture("ENTER", "#7a3bff");
-  const signMat = new THREE.MeshBasicMaterial({ map: signTexNormal, toneMapped: false });
-  const signPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.45), signMat);
-  signPlane.position.set(0, 2.35, DOOR_Z - 0.36);
-  group.add(signPlane);
+  const signTexNormal = makeSignTexture("EXIT", "#ff2a2a");
+  const signTexAnomaly = makeSignTexture("ENTER", "#7a3bff");
+  const { doorFrame, signPlane, signMat } = buildDoorAndSign(DOOR_Z, signTexNormal);
+  group.add(doorFrame, signPlane);
 
   // --- 時計（ROOM1付近, z=3） ---
   const clockGroup = new THREE.Group();
@@ -194,13 +157,6 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   let heartbeatTimer = 0;
   let heartbeatActive = false;
   let electricHumTimer = 0;
-
-  const bounds: CorridorBounds = {
-    halfWidthAt,
-    minZ: Z_MIN + 0.5,
-    maxZ: Z_MAX - 0.5,
-    centerX: 0,
-  };
 
   const runtime: StageRuntime = {
     group,

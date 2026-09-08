@@ -169,6 +169,16 @@ export function buildHumanSilhouette(color = 0x050505, opacity = 1): THREE.Group
   return group;
 }
 
+/** 顔テクスチャ付きの人型シルエット（患者用）。faceMeshを返し後から差し替え可能にする */
+export function buildFacedSilhouette(faceTex: THREE.Texture, color = 0x2c2a26): { group: THREE.Group; faceMesh: THREE.Mesh } {
+  const group = buildHumanSilhouette(color, 1);
+  const faceMat = new THREE.MeshBasicMaterial({ map: faceTex, toneMapped: false, transparent: true });
+  const faceMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.22), faceMat);
+  faceMesh.position.set(0, 1.75, 0.15);
+  group.add(faceMesh);
+  return { group, faceMesh };
+}
+
 export function buildUmbrella(): THREE.Group {
   const group = new THREE.Group();
   const poleMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.6 });
@@ -183,4 +193,254 @@ export function buildUmbrella(): THREE.Group {
 
 export function disposeTexture(tex: THREE.Texture | null | undefined) {
   tex?.dispose();
+}
+
+// ============================================================
+// STAGE02「廃病院」用テクスチャ・小道具
+// ============================================================
+
+export function makeHospitalWallTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(256, 256);
+  noiseFill(ctx, 256, 256, "#cdd3c8", 10);
+  ctx.strokeStyle = "rgba(90,100,90,0.25)";
+  ctx.lineWidth = 2;
+  for (let y = 90; y <= 256; y += 90) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(256, y);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "rgba(60,70,60,0.15)";
+  for (let i = 0; i < 6; i++) {
+    ctx.beginPath();
+    ctx.ellipse(Math.random() * 256, Math.random() * 256, 8 + Math.random() * 14, 4 + Math.random() * 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+export function makeHospitalFloorTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(256, 256);
+  noiseFill(ctx, 256, 256, "#9aa89c", 8);
+  ctx.strokeStyle = "rgba(255,255,255,0.06)";
+  ctx.lineWidth = 1;
+  const tile = 32;
+  for (let x = 0; x <= 256; x += tile) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 256);
+    ctx.stroke();
+  }
+  for (let y = 0; y <= 256; y += tile) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(256, y);
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(4, 12);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 病室番号プレート。glitchで数字が歪んだ異常表示になる */
+export function makeRoomNumberTexture(numberText: string, glitch = false): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 96);
+  ctx.fillStyle = "#1c1c1c";
+  ctx.fillRect(0, 0, 128, 96);
+  ctx.strokeStyle = "#555";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(2, 2, 124, 92);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  if (glitch) {
+    ctx.fillStyle = "#ff2a2a";
+    ctx.font = "bold 40px sans-serif";
+    ctx.save();
+    ctx.translate(64, 50);
+    ctx.rotate(0.06);
+    ctx.fillText(numberText, 2, 2);
+    ctx.restore();
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.fillText(numberText, -3, -2);
+  } else {
+    ctx.fillStyle = "#e8e6e1";
+    ctx.font = "bold 40px sans-serif";
+    ctx.fillText(numberText, 64, 50);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** カルテ（クリップボード）。anomalyでプレイヤーを示す不穏な記載に変わる */
+export function makeChartTexture(anomaly = false): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 176);
+  ctx.fillStyle = "#d8d4c4";
+  ctx.fillRect(0, 0, 128, 176);
+  ctx.strokeStyle = "#8a8672";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, 124, 172);
+  ctx.strokeStyle = "rgba(60,60,50,0.5)";
+  ctx.lineWidth = 1.5;
+  for (let y = 30; y < 170; y += 14) {
+    ctx.beginPath();
+    ctx.moveTo(14, y);
+    ctx.lineTo(114, y);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "#2a2a24";
+  ctx.font = "10px monospace";
+  ctx.textAlign = "left";
+  ctx.fillText("PATIENT CHART", 14, 18);
+  if (anomaly) {
+    ctx.fillStyle = "#a01010";
+    ctx.font = "bold 13px monospace";
+    ctx.fillText("NAME: YOU", 14, 44);
+  } else {
+    ctx.fillStyle = "#2a2a24";
+    ctx.font = "11px monospace";
+    ctx.fillText("NAME: ------", 14, 44);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 心拍モニターの波形画面 */
+export function makeECGTexture(spiky = false): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 80);
+  ctx.fillStyle = "#020a04";
+  ctx.fillRect(0, 0, 128, 80);
+  ctx.strokeStyle = "#25ff6b";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, 40);
+  const step = spiky ? 6 : 10;
+  for (let x = 0; x < 128; x += step) {
+    const spike = spiky ? (Math.random() - 0.5) * 60 : Math.sin(x * 0.3) * 4;
+    const big = !spiky && x % 40 < 6 ? -30 : 0;
+    ctx.lineTo(x, 40 + spike + big);
+  }
+  ctx.stroke();
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 患者の顔テクスチャ。seedで表情違いを生成し、通常時は個体差を出す */
+export function makePatientFaceTexture(seed: number): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(64, 64);
+  ctx.fillStyle = "#cabfae";
+  ctx.beginPath();
+  ctx.ellipse(32, 32, 22, 27, 0, 0, Math.PI * 2);
+  ctx.fill();
+  const eyeY = 26 + (seed % 3) - 1;
+  const eyeGap = 9 + (seed % 2) * 2;
+  ctx.fillStyle = "#161412";
+  ctx.beginPath();
+  ctx.arc(32 - eyeGap, eyeY, 2.4, 0, Math.PI * 2);
+  ctx.arc(32 + eyeGap, eyeY, 2.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#4a3f33";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  const mouthCurve = ((seed % 5) - 2) * 2;
+  ctx.moveTo(24, 44);
+  ctx.quadraticCurveTo(32, 44 + mouthCurve, 40, 44);
+  ctx.stroke();
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+export function buildPatientBed(): THREE.Group {
+  const group = new THREE.Group();
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x555b5e, roughness: 0.5, metalness: 0.4 });
+  const mattressMat = new THREE.MeshStandardMaterial({ color: 0xe4e0d2, roughness: 0.85 });
+  const mattress = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.12, 1.1), mattressMat);
+  mattress.position.y = 0.42;
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.06, 1.15), frameMat);
+  frame.position.y = 0.35;
+  const legGeo = new THREE.BoxGeometry(0.04, 0.34, 0.04);
+  const legOffsets: [number, number][] = [
+    [-0.26, -0.5],
+    [0.26, -0.5],
+    [-0.26, 0.5],
+    [0.26, 0.5],
+  ];
+  for (const [x, z] of legOffsets) {
+    const leg = new THREE.Mesh(legGeo, frameMat);
+    leg.position.set(x, 0.17, z);
+    group.add(leg);
+  }
+  const headboard = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.35, 0.05), frameMat);
+  headboard.position.set(0, 0.58, -0.55);
+  group.add(mattress, frame, headboard);
+  return group;
+}
+
+export function buildWheelchair(): THREE.Group {
+  const group = new THREE.Group();
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x2c2c2c, roughness: 0.5, metalness: 0.5 });
+  const seatMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.8 });
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.06, 0.4), seatMat);
+  seat.position.y = 0.42;
+  const back = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.35, 0.05), seatMat);
+  back.position.set(0, 0.62, -0.18);
+  const wheelGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.03, 16);
+  const wheelL = new THREE.Mesh(wheelGeo, frameMat);
+  wheelL.rotation.z = Math.PI / 2;
+  wheelL.position.set(-0.22, 0.24, 0.02);
+  const wheelR = wheelL.clone();
+  wheelR.position.x = 0.22;
+  const smallWheelGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.03, 10);
+  const smallL = new THREE.Mesh(smallWheelGeo, frameMat);
+  smallL.rotation.z = Math.PI / 2;
+  smallL.position.set(-0.16, 0.07, -0.32);
+  const smallR = smallL.clone();
+  smallR.position.x = 0.16;
+  group.add(seat, back, wheelL, wheelR, smallL, smallR);
+  return group;
+}
+
+export interface IVPoleHandle {
+  group: THREE.Group;
+  bagMat: THREE.MeshStandardMaterial;
+  drop: THREE.Mesh;
+}
+
+export function buildIVPole(): IVPoleHandle {
+  const group = new THREE.Group();
+  const poleMat = new THREE.MeshStandardMaterial({ color: 0xb7bcc0, roughness: 0.3, metalness: 0.8 });
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 1.5, 6), poleMat);
+  pole.position.y = 0.75;
+  const baseRing = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.015, 6, 16), poleMat);
+  baseRing.rotation.x = Math.PI / 2;
+  baseRing.position.y = 0.02;
+  const bagMat = new THREE.MeshStandardMaterial({ color: 0xdfe8ea, roughness: 0.4, transparent: true, opacity: 0.85 });
+  const bag = new THREE.Mesh(new THREE.CapsuleGeometry(0.06, 0.14, 4, 8), bagMat);
+  bag.position.y = 1.4;
+  const tubeMat = new THREE.MeshBasicMaterial({ color: 0x88a0a8 });
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.55, 5), tubeMat);
+  tube.position.y = 1.02;
+  const drop = new THREE.Mesh(new THREE.SphereGeometry(0.014, 6, 6), new THREE.MeshBasicMaterial({ color: 0xaad4e0 }));
+  drop.position.y = 1.2;
+  group.add(pole, baseRing, bag, tube, drop);
+  return { group, bagMat, drop };
+}
+
+export function buildNurseSpeaker(): THREE.Group {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color: 0xd8d8d0, roughness: 0.6 });
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.05), mat);
+  const grillMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4 });
+  const grill = new THREE.Mesh(new THREE.CircleGeometry(0.03, 12), grillMat);
+  grill.position.z = 0.026;
+  group.add(box, grill);
+  return group;
 }

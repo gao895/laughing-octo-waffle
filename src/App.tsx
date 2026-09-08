@@ -18,7 +18,7 @@ export default function App() {
   const frameHandlerRef = useRef<((info: HudFrameInfo) => void) | null>(null);
 
   const [gameState, setGameState] = useState<GameState>("TITLE");
-  const [stageLabel, setStageLabel] = useState<{ name: string; subtitle: string } | null>(null);
+  const [stageLabel, setStageLabel] = useState<{ stageId: number; name: string; subtitle: string } | null>(null);
   const [judgement, setJudgement] = useState<JudgementResult | null>(null);
   const [pointerLockLost, setPointerLockLost] = useState(false);
   const [stageClearInfo, setStageClearInfo] = useState<{ stageId: number; isFinal: boolean } | null>(null);
@@ -37,7 +37,7 @@ export default function App() {
 
     gm.setCallbacks({
       onStateChange: (s) => setGameState(s),
-      onStageLabel: (name, subtitle) => setStageLabel({ name, subtitle }),
+      onStageLabel: (stageId, name, subtitle) => setStageLabel({ stageId, name, subtitle }),
       onJudgement: (result) => setJudgement(result),
       onGameOver: () => setEndingData(gm.endingManager.getEnding("BAD")),
       onStageClear: (stageId, isFinal) => setStageClearInfo({ stageId, isFinal }),
@@ -96,7 +96,16 @@ export default function App() {
     setStageClearInfo(null);
     setEndingData(null);
     setPointerLockLost(false);
-    gameManagerRef.current?.startStage(reached === 1 ? 1 : 1);
+    gameManagerRef.current?.startStage(reached);
+  };
+
+  const handleNextStage = () => {
+    setStageLabel(null);
+    setJudgement(null);
+    setStageClearInfo(null);
+    setEndingData(null);
+    setPointerLockLost(false);
+    gameManagerRef.current?.startNextStage();
   };
 
   const handleSettingsChange = (patch: Partial<SettingsData>) => {
@@ -152,7 +161,13 @@ export default function App() {
       )}
 
       {gameState === "STAGE_CLEAR" && stageClearInfo && (
-        <ResultScreen stageId={stageClearInfo.stageId} isFinalStage={stageClearInfo.isFinal} onContinue={backToTitle} />
+        <ResultScreen
+          stageId={stageClearInfo.stageId}
+          isFinalStage={stageClearInfo.isFinal}
+          hasNextStage={!stageClearInfo.isFinal && (gameManagerRef.current?.isNextStageAvailable() ?? false)}
+          onNextStage={handleNextStage}
+          onBackToTitle={backToTitle}
+        />
       )}
 
       {gameState === "GAME_OVER" && endingData && <EndingScreen ending={endingData} onBackToTitle={backToTitle} />}

@@ -1,10 +1,12 @@
 interface Props {
   stageId: number;
   isFinalStage: boolean;
-  onContinue: () => void;
+  hasNextStage: boolean;
+  onNextStage: () => void;
+  onBackToTitle: () => void;
 }
 
-export default function ResultScreen({ stageId, isFinalStage, onContinue }: Props) {
+export default function ResultScreen({ stageId, isFinalStage, hasNextStage, onNextStage, onBackToTitle }: Props) {
   return (
     <div className="overlay-panel" style={{ pointerEvents: "auto" }}>
       <div className="panel-box">
@@ -12,9 +14,16 @@ export default function ResultScreen({ stageId, isFinalStage, onContinue }: Prop
         <div className="result-text">
           {isFinalStage
             ? "全ての異界を抜け、あなたは現実へ戻った。"
-            : "異変を見抜き、ループを抜け出した。\n\nつづく――（STAGE 02 は現在開発中です）"}
+            : hasNextStage
+              ? "異変を見抜き、ループを抜け出した。"
+              : "異変を見抜き、ループを抜け出した。\n\nつづく――（この先のステージは現在開発中です）"}
         </div>
-        <button className="menu-btn" onClick={onContinue}>
+        {hasNextStage && (
+          <button className="menu-btn" onClick={onNextStage}>
+            NEXT STAGE
+          </button>
+        )}
+        <button className="menu-btn" onClick={onBackToTitle}>
           タイトルへ戻る
         </button>
       </div>

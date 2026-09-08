@@ -5,7 +5,7 @@ import type { JudgementResult } from "../game/AnomalyManager";
 
 interface Props {
   frameHandlerRef: MutableRefObject<((info: HudFrameInfo) => void) | null>;
-  stageLabel: { name: string; subtitle: string } | null;
+  stageLabel: { stageId: number; name: string; subtitle: string } | null;
   judgement: JudgementResult | null;
   pointerLockLost: boolean;
   onRequestLock: () => void;
@@ -66,7 +66,7 @@ export default function GameHUD({ frameHandlerRef, stageLabel, judgement, pointe
       <div className="hud-dot" />
       <div ref={promptRef} className="hud-prompt" />
       <div ref={stageLabelRef} className="hud-stage-label">
-        <div className="num">STAGE {String(1).padStart(2, "0")}</div>
+        <div className="num">STAGE {String(stageLabel?.stageId ?? 1).padStart(2, "0")}</div>
         <div className="sub">{stageLabel?.subtitle}</div>
       </div>
       <div

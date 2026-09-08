@@ -10,9 +10,17 @@ import { AudioManager } from "./AudioManager";
 import { SaveManager } from "./SaveManager";
 import { EndingManager } from "./EndingManager";
 import { buildStage01 } from "../stages/stage01/build";
+import { buildStage02 } from "../stages/stage02/build";
 import { getStageConfig } from "../data/stages";
 import { getAnomaliesForStage } from "../data/anomalies";
 import type { GameState, PlayerAction } from "../types/gameTypes";
+import type { StageRuntime } from "./StageManager";
+
+/** ステージIDごとのシーン構築関数レジストリ。新ステージ追加時はここに登録する。 */
+const STAGE_BUILDERS: Record<number, (scene: THREE.Scene, lighting: LightingManager, audio: AudioManager) => StageRuntime> = {
+  1: buildStage01,
+  2: buildStage02,
+};
 
 export interface HudFrameInfo {
   promptAction: PlayerAction | null;
@@ -24,7 +32,7 @@ export interface HudFrameInfo {
 
 export interface GameManagerCallbacks {
   onStateChange?: (state: GameState) => void;
-  onStageLabel?: (name: string, subtitle: string) => void;
+  onStageLabel?: (stageId: number, name: string, subtitle: string) => void;
   onJudgement?: (result: JudgementResult) => void;
   onGameOver?: () => void;
   onStageClear?: (stageId: number, isFinalStage: boolean) => void;
@@ -109,16 +117,18 @@ export class GameManager {
     return this.debugGodMode;
   }
 
-  /** ゲーム開始（新規 or つづきから） */
+  /** ゲーム開始（新規 or つづきから）。stageIdに対応するビルダーが未登録の場合は何もしない */
   startStage(stageId: number) {
     const config = getStageConfig(stageId);
-    if (!config || !config.implemented) return;
+    const builder = STAGE_BUILDERS[stageId];
+    if (!config || !config.implemented || !builder) return;
     this.currentStageId = stageId;
 
     this.audioManager.init(this.saveManager.getSettings());
+    this.audioManager.stopAmbience();
     this.audioManager.startAmbience();
 
-    const runtime = buildStage01(this.sceneManager.scene, this.lightingManager, this.audioManager);
+    const runtime = builder(this.sceneManager.scene, this.lightingManager, this.audioManager);
     this.stageManager.loadStage(runtime);
 
     this.loopManager = new LoopManager(this.saveManager.getSettings().difficulty, config.loopsToClear);
@@ -127,13 +137,23 @@ export class GameManager {
     this.placeAtSpawn();
     this.anomalyManager.rollForLoop(stageId, this.loopManager.loopIndex, runtime, false);
 
-    this.callbacks.onStageLabel?.(config.name, config.subtitle);
+    this.callbacks.onStageLabel?.(stageId, config.name, config.subtitle);
     this.saveManager.setReachedStage(stageId);
 
     this.playerController.requestLock();
     this.setState("PLAYING");
     this.lastTime = performance.now();
     if (this.rafId === null) this.loop();
+  }
+
+  /** 現在のステージの次に実装済みステージがあるか（リザルト画面のNEXT STAGE表示用） */
+  isNextStageAvailable(): boolean {
+    const next = getStageConfig(this.currentStageId + 1);
+    return !!next && next.implemented;
+  }
+
+  startNextStage() {
+    this.startStage(this.currentStageId + 1);
   }
 
   private placeAtSpawn() {
@@ -196,8 +216,11 @@ export class GameManager {
 
   private handleFootstep() {
     this.audioManager.playFootstep();
-    if (this.anomalyManager.activeAnomaly?.id === "extra_footstep") {
+    const activeId = this.anomalyManager.activeAnomaly?.id;
+    if (activeId === "extra_footstep") {
       this.audioManager.playExtraFootstepGhost();
+    } else if (activeId === "monitor_sync") {
+      this.audioManager.playHeartbeat(999);
     }
   }
 

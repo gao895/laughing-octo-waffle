@@ -125,6 +125,25 @@ export class AudioManager {
     setTimeout(() => this.playFootstep(), 260);
   }
 
+  /** 空室から響くナースコールの電子音 */
+  playNurseCall() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    for (let i = 0; i < 3; i++) {
+      const t = now + i * 0.4;
+      const osc = this.ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = 1046;
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.3, t + 0.02);
+      gain.gain.linearRampToValueAtTime(0.001, t + 0.18);
+      osc.connect(gain).connect(this.seGain);
+      osc.start(t);
+      osc.stop(t + 0.2);
+    }
+  }
+
   playKnock(pan = 0) {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;

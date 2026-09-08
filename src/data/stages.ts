@@ -11,7 +11,7 @@ export const STAGES: StageConfig[] = [
     implemented: true,
     loopsToClear: 6,
   },
-  { id: 2, key: "stage02", name: "廃病院", subtitle: "HOSPITAL", theme: "生きている病院", implemented: false, loopsToClear: 6 },
+  { id: 2, key: "stage02", name: "廃病院", subtitle: "HOSPITAL", theme: "生きている病院", implemented: true, loopsToClear: 6 },
   { id: 3, key: "stage03", name: "廃校", subtitle: "SCHOOL", theme: "存在しない生徒", implemented: false, loopsToClear: 6 },
   { id: 4, key: "stage04", name: "夜神社", subtitle: "SHRINE", theme: "振り返ってはいけない", implemented: false, loopsToClear: 6, specialRule: "異変を発見したら振り返る" },
   { id: 5, key: "stage05", name: "ホテル666", subtitle: "HOTEL 666", theme: "泊まってはいけないホテル", implemented: false, loopsToClear: 6 },
