@@ -57,12 +57,15 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   group.add(doorFrame, signPlane);
 
   // --- ROOM1: 患者の待合スペース ---
-  const room1HalfWidth = halfWidthAt(ROOM1_Z);
+  // 部屋の中心(ROOM1_Z/ROOM2_Z)から離れるほど通路幅は狭くなるため、
+  // 各小道具は「部屋中心での幅」ではなく必ず自分自身のZ座標での幅を使って配置する。
+  // （でないと壁のカーブに対して手前や奥の小道具が壁にめり込む）
   const patientGroup = new THREE.Group();
   group.add(patientGroup);
   const normalFaceTextures = [makePatientFaceTexture(1), makePatientFaceTexture(2), makePatientFaceTexture(3)];
   const sameFaceTexture = makePatientFaceTexture(13);
   const patientFaceMeshes: THREE.Mesh[] = [];
+  const PATIENT_MARGIN = 0.42; // 体半径0.22 + 余白
 
   function rebuildPatients(count: number) {
     patientGroup.clear();
@@ -72,7 +75,9 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
       const { group: patient, faceMesh } = buildFacedSilhouette(tex);
       const col = i % 2;
       const row = Math.floor(i / 2);
-      patient.position.set(room1HalfWidth - 0.35 - col * 0.4, 0, ROOM1_Z + 1.3 - row * 0.5);
+      const z = ROOM1_Z + 1.3 - row * 0.5;
+      const hw = halfWidthAt(z);
+      patient.position.set(hw - PATIENT_MARGIN - col * 0.4, 0, z);
       patient.rotation.y = Math.PI / 2 + (Math.random() - 0.5) * 0.6;
       faceMesh.userData.normalTex = tex;
       patientGroup.add(patient);
@@ -81,38 +86,44 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   }
   rebuildPatients(2);
 
+  const bedZ = ROOM1_Z - 0.4;
   const bed = buildPatientBed();
-  bed.position.set(-(room1HalfWidth - 0.35), 0, ROOM1_Z - 0.4);
+  // buildPatientBed()はY軸90度回転で奥行き1.1m(半分0.55m)がワールドX方向に伸びるため、
+  // 余白は0.55m+安全マージンを確保する。
+  bed.position.set(-(halfWidthAt(bedZ) - 0.68), 0, bedZ);
   bed.rotation.y = Math.PI / 2;
   group.add(bed);
 
+  const ivZ = ROOM1_Z - 0.9;
   const ivHandle = buildIVPole();
-  ivHandle.group.position.set(-(room1HalfWidth - 0.05), 0, ROOM1_Z - 0.9);
+  ivHandle.group.position.set(-(halfWidthAt(ivZ) - 0.18), 0, ivZ);
   group.add(ivHandle.group);
   let ivReversed = false;
   let ivDropT = 0.3;
 
+  const chartZ = ROOM1_Z - 1.1;
   const chartTexNormal = makeChartTexture(false);
   const chartTexAnomaly = makeChartTexture(true);
   const chartMat = new THREE.MeshBasicMaterial({ map: chartTexNormal, toneMapped: false });
   const chartPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.44), chartMat);
-  chartPlane.position.set(room1HalfWidth - 0.04, 1.3, ROOM1_Z - 1.1);
+  chartPlane.position.set(halfWidthAt(chartZ) - 0.04, 1.3, chartZ);
   chartPlane.rotation.y = -Math.PI / 2;
   group.add(chartPlane);
 
   // --- ROOM2: ナースステーション周辺 ---
-  const room2HalfWidth = halfWidthAt(ROOM2_Z);
-
+  const nurseWallZ = ROOM2_Z + 1;
   const nurseInWall = buildHumanSilhouette(0x1a1a1a, 0.95);
   nurseInWall.scale.set(0.9, 0.9, 0.9);
-  nurseInWall.position.set(-(room2HalfWidth + 0.05), 0, ROOM2_Z + 1);
+  nurseInWall.position.set(-halfWidthAt(nurseWallZ), 0, nurseWallZ);
   nurseInWall.rotation.y = Math.PI / 2;
   nurseInWall.visible = false;
   group.add(nurseInWall);
 
+  const wheelchairBaseZ = ROOM2_Z - 1;
+  const wheelchairMovedZ = ROOM2_Z + 0.6;
   const wheelchair = buildWheelchair();
-  const wheelchairBasePos = new THREE.Vector3(room2HalfWidth - 0.4, 0, ROOM2_Z - 1);
-  const wheelchairMovedPos = new THREE.Vector3(room2HalfWidth - 0.7, 0, ROOM2_Z + 0.6);
+  const wheelchairBasePos = new THREE.Vector3(halfWidthAt(wheelchairBaseZ) - 0.55, 0, wheelchairBaseZ);
+  const wheelchairMovedPos = new THREE.Vector3(halfWidthAt(wheelchairMovedZ) - 0.55, 0, wheelchairMovedZ);
   wheelchair.position.copy(wheelchairBasePos);
   group.add(wheelchair);
   let wheelchairDrifting = false;
@@ -124,19 +135,21 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   let emptyRoomCallActive = false;
   let nurseCallTimer = 0;
 
+  const ecgZ = ROOM2_Z + 0.8;
   const ecgTexNormal = makeECGTexture(false);
   const ecgTexSpiky = makeECGTexture(true);
   const ecgMat = new THREE.MeshBasicMaterial({ map: ecgTexNormal, toneMapped: false });
   const ecgPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.2), ecgMat);
-  ecgPlane.position.set(-(room2HalfWidth - 0.04), 1.5, ROOM2_Z + 0.8);
+  ecgPlane.position.set(-(halfWidthAt(ecgZ) - 0.04), 1.5, ecgZ);
   ecgPlane.rotation.y = Math.PI / 2;
   group.add(ecgPlane);
 
+  const roomNumZ = ROOM2_Z + 1.6;
   const roomNumTexNormal = makeRoomNumberTexture("204", false);
   const roomNumTexGlitch = makeRoomNumberTexture("666", true);
   const roomNumMat = new THREE.MeshBasicMaterial({ map: roomNumTexNormal, toneMapped: false });
   const roomNumPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.21), roomNumMat);
-  roomNumPlane.position.set(room2HalfWidth - 0.04, 1.9, ROOM2_Z + 1.6);
+  roomNumPlane.position.set(halfWidthAt(roomNumZ) - 0.04, 1.9, roomNumZ);
   roomNumPlane.rotation.y = -Math.PI / 2;
   group.add(roomNumPlane);
 
