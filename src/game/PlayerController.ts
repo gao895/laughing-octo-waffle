@@ -13,6 +13,8 @@ const WALK_SPEED = 2.2;
 const DASH_SPEED = 4.2;
 const DASH_DURATION = 0.9;
 const DASH_COOLDOWN = 2.5;
+/** Pointer Lock取得直後などにブラウザが報告する異常に大きいmovementXY値を弾く上限(px) */
+const MAX_MOUSE_DELTA = 120;
 
 /**
  * 一人称プレイヤーの移動・視点操作を管理する。
@@ -27,6 +29,7 @@ export class PlayerController {
   private cameraManager: CameraManager;
   private sensitivity = 0.5;
   private locked = false;
+  private skipNextMouseDelta = false;
 
   private dashTimer = 0;
   private dashCooldownTimer = 0;
@@ -49,7 +52,16 @@ export class PlayerController {
 
   private handleMouseMove = (e: MouseEvent) => {
     if (!this.locked) return;
-    this.applyLookDelta(e.movementX, e.movementY);
+    // Pointer Lock取得直後の最初のmousemoveは、ロック前のカーソル位置からの
+    // 移動量をそのまま報告するブラウザがあり、視点が一瞬で左上などへ
+    // 大きくスナップしてしまう。最初の1回は破棄し、以降も異常値はクランプする。
+    if (this.skipNextMouseDelta) {
+      this.skipNextMouseDelta = false;
+      return;
+    }
+    const dx = Math.max(-MAX_MOUSE_DELTA, Math.min(MAX_MOUSE_DELTA, e.movementX));
+    const dy = Math.max(-MAX_MOUSE_DELTA, Math.min(MAX_MOUSE_DELTA, e.movementY));
+    this.applyLookDelta(dx, dy);
   };
 
   /** タッチドラッグによる視点操作（Pointer Lockが使えないiOS等で使用） */
@@ -75,7 +87,9 @@ export class PlayerController {
   };
 
   private handlePointerLockChange = () => {
-    this.locked = document.pointerLockElement === this.domElement;
+    const nowLocked = document.pointerLockElement === this.domElement;
+    if (nowLocked && !this.locked) this.skipNextMouseDelta = true;
+    this.locked = nowLocked;
     this.onLockChange?.(this.locked);
   };
 
