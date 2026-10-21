@@ -12,20 +12,17 @@ import {
   buildHumanSilhouette,
   buildUmbrella,
 } from "../../three/EnvironmentManager";
-import { buildCorridorShell, addCorridorLights, buildDoorAndSign, gaussianBump } from "../shared/corridorBuilder";
+import { buildCorridorShell, addCorridorLights, buildDoorAndSign } from "../shared/corridorBuilder";
 
 const Z_MIN = -16.6;
 const Z_MAX = 11;
 const SPAWN_Z = 8;
 const DOOR_Z = -16;
-const BASE_HALF_WIDTH = 1.15;
+// 8番出口のような「一本道」を再現するため、通路幅は部屋状の膨らみを持たせず一定にする
+const HALF_WIDTH = 1.3;
 
-function halfWidthAt(z: number): number {
-  return (
-    BASE_HALF_WIDTH +
-    gaussianBump(z, 3, 2.6, 1.3) +
-    gaussianBump(z, -8, 2.6, 1.3)
-  );
+function halfWidthAt(_z: number): number {
+  return HALF_WIDTH;
 }
 
 export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audio: AudioManager): StageRuntime {
@@ -54,7 +51,7 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   const { doorFrame, signPlane, signMat } = buildDoorAndSign(DOOR_Z, signTexNormal);
   group.add(doorFrame, signPlane);
 
-  // --- 時計（ROOM1付近, z=3） ---
+  // --- 時計（壁掛け, z=4） ---
   const clockGroup = new THREE.Group();
   const clockFaceMat = new THREE.MeshBasicMaterial({ map: makeClockFaceTexture(), toneMapped: false });
   const clockFace = new THREE.Mesh(new THREE.CircleGeometry(0.32, 24), clockFaceMat);
@@ -68,36 +65,38 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   handPivot.add(hand);
   handPivot.position.z = 0.01;
   clockGroup.add(handPivot);
-  const room1HalfWidth = halfWidthAt(3);
-  clockGroup.position.set(-(room1HalfWidth - 0.05), 1.7, 3);
+  const CLOCK_Z = 4;
+  clockGroup.position.set(-(halfWidthAt(CLOCK_Z) - 0.05), 1.7, CLOCK_Z);
   clockGroup.rotation.y = Math.PI / 2;
   group.add(clockGroup);
   let clockDirection = 1;
 
-  // --- ポスター（ROOM1、時計の反対側） ---
+  // --- ポスター（反対側の壁, z=1） ---
   const posterTexNormal = makePosterTexture(0);
   const posterTexAnomaly = makePosterTexture(1);
   const posterMat = new THREE.MeshBasicMaterial({ map: posterTexNormal, toneMapped: false });
   const posterPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.85), posterMat);
-  posterPlane.position.set(room1HalfWidth - 0.05, 1.3, 3.6);
+  const POSTER_Z = 1;
+  posterPlane.position.set(halfWidthAt(POSTER_Z) - 0.05, 1.3, POSTER_Z);
   posterPlane.rotation.y = -Math.PI / 2;
   group.add(posterPlane);
 
   // --- 傘立て（START付近, z=6.5） ---
   const umbrellaGroup = new THREE.Group();
   group.add(umbrellaGroup);
-  const room1WidthAtSpawn = halfWidthAt(6.5);
+  const UMBRELLA_Z = 6.5;
+  const umbrellaHalfWidth = halfWidthAt(UMBRELLA_Z);
   function rebuildUmbrellas(count: number) {
     umbrellaGroup.clear();
     for (let i = 0; i < count; i++) {
       const u = buildUmbrella();
-      u.position.set(room1WidthAtSpawn - 0.3 + (i % 2) * 0.15, 0, 6.5 - Math.floor(i / 2) * 0.22);
+      u.position.set(umbrellaHalfWidth - 0.3 + (i % 2) * 0.15, 0, UMBRELLA_Z - Math.floor(i / 2) * 0.22);
       umbrellaGroup.add(u);
     }
   }
   rebuildUmbrellas(2);
 
-  // --- 防犯カメラ（ROOM2, z=-8） ---
+  // --- 防犯カメラ（天井中央, z=-2.5） ---
   const cameraGroup = new THREE.Group();
   const camBody = new THREE.Mesh(
     new THREE.BoxGeometry(0.15, 0.12, 0.22),
@@ -112,12 +111,13 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   camLens.position.z = 0.13;
   camHeadPivot.add(camBody, camLens);
   cameraGroup.add(camHeadPivot);
-  cameraGroup.position.set(0, 2.4, -8);
+  cameraGroup.position.set(0, 2.4, -2.5);
   group.add(cameraGroup);
   let cameraFollowActive = false;
 
-  // --- 鏡（ROOM2、カメラ付近の壁） ---
-  const room2HalfWidth = halfWidthAt(-8.5);
+  // --- 鏡（壁掛け, z=-5.5） ---
+  const MIRROR_Z = -5.5;
+  const mirrorHalfWidth = halfWidthAt(MIRROR_Z);
   const mirrorFrame = new THREE.Mesh(
     new THREE.BoxGeometry(0.7, 1.1, 0.04),
     new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.5 })
@@ -128,13 +128,13 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   );
   mirrorGlass.position.z = 0.03;
   mirrorFrame.add(mirrorGlass);
-  mirrorFrame.position.set(-(room2HalfWidth - 0.06), 1.3, -8.5);
+  mirrorFrame.position.set(-(mirrorHalfWidth - 0.06), 1.3, MIRROR_Z);
   mirrorFrame.rotation.y = Math.PI / 2;
   group.add(mirrorFrame);
 
   const mirrorFigure = buildHumanSilhouette(0x0a0a0a, 0.85);
   mirrorFigure.scale.set(0.5, 0.5, 0.02);
-  mirrorFigure.position.set(-(room2HalfWidth - 0.1), 0.55, -8.5);
+  mirrorFigure.position.set(-(mirrorHalfWidth - 0.1), 0.55, MIRROR_Z);
   mirrorFigure.rotation.y = Math.PI / 2;
   mirrorFigure.visible = false;
   group.add(mirrorFigure);

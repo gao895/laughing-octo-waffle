@@ -18,18 +18,17 @@ import {
   buildIVPole,
   buildNurseSpeaker,
 } from "../../three/EnvironmentManager";
-import { buildCorridorShell, addCorridorLights, buildDoorAndSign, gaussianBump } from "../shared/corridorBuilder";
+import { buildCorridorShell, addCorridorLights, buildDoorAndSign } from "../shared/corridorBuilder";
 
 const Z_MIN = -16.6;
 const Z_MAX = 11;
 const SPAWN_Z = 8;
 const DOOR_Z = -16;
-const BASE_HALF_WIDTH = 1.15;
-const ROOM1_Z = 3;
-const ROOM2_Z = -8;
+// 8番出口のような「一本道」を再現するため、通路幅は部屋状の膨らみを持たせず一定にする
+const HALF_WIDTH = 1.3;
 
-function halfWidthAt(z: number): number {
-  return BASE_HALF_WIDTH + gaussianBump(z, ROOM1_Z, 2.6, 1.3) + gaussianBump(z, ROOM2_Z, 2.6, 1.3);
+function halfWidthAt(_z: number): number {
+  return HALF_WIDTH;
 }
 
 export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audio: AudioManager): StageRuntime {
@@ -56,16 +55,16 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   const { doorFrame, signPlane } = buildDoorAndSign(DOOR_Z, signTex);
   group.add(doorFrame, signPlane);
 
-  // --- ROOM1: 患者の待合スペース ---
-  // 部屋の中心(ROOM1_Z/ROOM2_Z)から離れるほど通路幅は狭くなるため、
-  // 各小道具は「部屋中心での幅」ではなく必ず自分自身のZ座標での幅を使って配置する。
-  // （でないと壁のカーブに対して手前や奥の小道具が壁にめり込む）
+  // --- 小道具を一本道沿いに一列に配置する ---
+  // 部屋状の膨らみを無くしたため、横並びではなくZ軸方向に1体ずつ間隔を空けて並べる。
   const patientGroup = new THREE.Group();
   group.add(patientGroup);
   const normalFaceTextures = [makePatientFaceTexture(1), makePatientFaceTexture(2), makePatientFaceTexture(3)];
   const sameFaceTexture = makePatientFaceTexture(13);
   const patientFaceMeshes: THREE.Mesh[] = [];
   const PATIENT_MARGIN = 0.42; // 体半径0.22 + 余白
+  const PATIENT_Z_START = 5.5;
+  const PATIENT_Z_STEP = 0.6;
 
   function rebuildPatients(count: number) {
     patientGroup.clear();
@@ -73,11 +72,9 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
     for (let i = 0; i < count; i++) {
       const tex = normalFaceTextures[i % normalFaceTextures.length];
       const { group: patient, faceMesh } = buildFacedSilhouette(tex);
-      const col = i % 2;
-      const row = Math.floor(i / 2);
-      const z = ROOM1_Z + 1.3 - row * 0.5;
+      const z = PATIENT_Z_START - i * PATIENT_Z_STEP;
       const hw = halfWidthAt(z);
-      patient.position.set(hw - PATIENT_MARGIN - col * 0.4, 0, z);
+      patient.position.set(hw - PATIENT_MARGIN, 0, z);
       patient.rotation.y = Math.PI / 2 + (Math.random() - 0.5) * 0.6;
       faceMesh.userData.normalTex = tex;
       patientGroup.add(patient);
@@ -86,22 +83,21 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   }
   rebuildPatients(2);
 
-  const bedZ = ROOM1_Z - 0.4;
+  const bedZ = 2;
   const bed = buildPatientBed();
-  // buildPatientBed()はY軸90度回転で奥行き1.1m(半分0.55m)がワールドX方向に伸びるため、
-  // 余白は0.55m+安全マージンを確保する。
-  bed.position.set(-(halfWidthAt(bedZ) - 0.68), 0, bedZ);
-  bed.rotation.y = Math.PI / 2;
+  // buildPatientBed()は幅0.55m・奥行き1.1mで作られており、回転させず置くことで
+  // 狭い幅(0.55m)だけを通路側に向け、残りの長さは通路に沿わせる（一本道でも干渉しない）。
+  bed.position.set(-(halfWidthAt(bedZ) - 0.42), 0, bedZ);
   group.add(bed);
 
-  const ivZ = ROOM1_Z - 0.9;
+  const ivZ = 1.3;
   const ivHandle = buildIVPole();
   ivHandle.group.position.set(-(halfWidthAt(ivZ) - 0.18), 0, ivZ);
   group.add(ivHandle.group);
   let ivReversed = false;
   let ivDropT = 0.3;
 
-  const chartZ = ROOM1_Z - 1.1;
+  const chartZ = 0.4;
   const chartTexNormal = makeChartTexture(false);
   const chartTexAnomaly = makeChartTexture(true);
   const chartMat = new THREE.MeshBasicMaterial({ map: chartTexNormal, toneMapped: false });
@@ -110,8 +106,7 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   chartPlane.rotation.y = -Math.PI / 2;
   group.add(chartPlane);
 
-  // --- ROOM2: ナースステーション周辺 ---
-  const nurseWallZ = ROOM2_Z + 1;
+  const nurseWallZ = -3;
   const nurseInWall = buildHumanSilhouette(0x1a1a1a, 0.95);
   nurseInWall.scale.set(0.9, 0.9, 0.9);
   nurseInWall.position.set(-halfWidthAt(nurseWallZ), 0, nurseWallZ);
@@ -119,23 +114,25 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   nurseInWall.visible = false;
   group.add(nurseInWall);
 
-  const wheelchairBaseZ = ROOM2_Z - 1;
-  const wheelchairMovedZ = ROOM2_Z + 0.6;
+  const wheelchairBaseZ = -5;
+  const wheelchairMovedZ = -6.5;
   const wheelchair = buildWheelchair();
-  const wheelchairBasePos = new THREE.Vector3(halfWidthAt(wheelchairBaseZ) - 0.55, 0, wheelchairBaseZ);
-  const wheelchairMovedPos = new THREE.Vector3(halfWidthAt(wheelchairMovedZ) - 0.55, 0, wheelchairMovedZ);
+  // 車輪が左右に張り出すため90度回転させ、狭い奥行き方向だけを通路側に向ける
+  wheelchair.rotation.y = Math.PI / 2;
+  const wheelchairBasePos = new THREE.Vector3(halfWidthAt(wheelchairBaseZ) - 0.45, 0, wheelchairBaseZ);
+  const wheelchairMovedPos = new THREE.Vector3(halfWidthAt(wheelchairMovedZ) - 0.45, 0, wheelchairMovedZ);
   wheelchair.position.copy(wheelchairBasePos);
   group.add(wheelchair);
   let wheelchairDrifting = false;
 
   const speaker = buildNurseSpeaker();
-  speaker.position.set(0, 2.5, ROOM2_Z - 1.5);
+  speaker.position.set(0, 2.5, -6);
   speaker.rotation.x = Math.PI / 2;
   group.add(speaker);
   let emptyRoomCallActive = false;
   let nurseCallTimer = 0;
 
-  const ecgZ = ROOM2_Z + 0.8;
+  const ecgZ = -8;
   const ecgTexNormal = makeECGTexture(false);
   const ecgTexSpiky = makeECGTexture(true);
   const ecgMat = new THREE.MeshBasicMaterial({ map: ecgTexNormal, toneMapped: false });
@@ -144,7 +141,7 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   ecgPlane.rotation.y = Math.PI / 2;
   group.add(ecgPlane);
 
-  const roomNumZ = ROOM2_Z + 1.6;
+  const roomNumZ = -10;
   const roomNumTexNormal = makeRoomNumberTexture("204", false);
   const roomNumTexGlitch = makeRoomNumberTexture("666", true);
   const roomNumMat = new THREE.MeshBasicMaterial({ map: roomNumTexNormal, toneMapped: false });
@@ -161,7 +158,7 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
     roughness: 0.4,
   });
   const lampMesh = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12), lampMat);
-  lampMesh.position.set(0, 2.45, ROOM2_Z - 2.3);
+  lampMesh.position.set(0, 2.45, -12.5);
   group.add(lampMesh);
   const operatingLight = new THREE.PointLight(0xff2222, 0, 3.5, 2);
   operatingLight.position.copy(lampMesh.position);
