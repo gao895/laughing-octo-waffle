@@ -284,6 +284,20 @@ body,
   font-family: monospace;
 }
 
+.hud-exit-counter {
+  position: absolute;
+  top: 2.4vh;
+  left: 2vw;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  font-family: monospace;
+  letter-spacing: 0.12em;
+  color: var(--fg-dim);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent-dim);
+}
+
 .hud-judgement {
   position: absolute;
   left: 50%;

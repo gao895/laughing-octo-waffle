@@ -28,6 +28,7 @@ export interface HudFrameInfo {
   loopIndex: number;
   mistakes: number;
   maxMistakes: number;
+  passCount: number;
 }
 
 export interface GameManagerCallbacks {
@@ -334,6 +335,7 @@ export class GameManager {
       loopIndex: this.loopManager?.loopIndex ?? 1,
       mistakes: this.loopManager?.mistakes ?? 0,
       maxMistakes: this.loopManager?.maxMistakes ?? 3,
+      passCount: this.loopManager?.passCount ?? 0,
     });
   }
 

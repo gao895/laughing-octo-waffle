@@ -6,6 +6,7 @@ export interface LoopOutcome {
   mistakes: number;
   stageCleared: boolean;
   gameOver: boolean;
+  passCount: number;
 }
 
 const MAX_MISTAKES: Record<Difficulty, number> = {
@@ -21,6 +22,8 @@ const MAX_MISTAKES: Record<Difficulty, number> = {
 export class LoopManager {
   loopIndex = 1;
   mistakes = 0;
+  /** 8番出口のEXIT番号表示のように、正しく通過した回数だけを数える */
+  passCount = 0;
   private difficulty: Difficulty;
   private loopsToClear: number;
 
@@ -44,6 +47,9 @@ export class LoopManager {
     }
     const gameOver = this.mistakes >= this.maxMistakes;
     const stageCleared = bossClear && correct && !gameOver;
+    if (correct && !gameOver) {
+      this.passCount += 1;
+    }
     if (!gameOver && !stageCleared) {
       this.loopIndex += 1;
     }
@@ -53,11 +59,13 @@ export class LoopManager {
       mistakes: this.mistakes,
       stageCleared,
       gameOver,
+      passCount: this.passCount,
     };
   }
 
   reset() {
     this.loopIndex = 1;
     this.mistakes = 0;
+    this.passCount = 0;
   }
 }

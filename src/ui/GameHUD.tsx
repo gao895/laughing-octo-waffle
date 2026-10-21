@@ -21,6 +21,7 @@ export default function GameHUD({ frameHandlerRef, stageLabel, judgement, pointe
   const mistakesRef = useRef<HTMLDivElement>(null);
   const judgementRef = useRef<HTMLDivElement>(null);
   const stageLabelRef = useRef<HTMLDivElement>(null);
+  const exitCounterRef = useRef<HTMLDivElement>(null);
   const hideTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -38,6 +39,9 @@ export default function GameHUD({ frameHandlerRef, stageLabel, judgement, pointe
         mistakesRef.current.innerHTML = dots
           .map((filled) => `<div class="hud-mistake-dot${filled ? " filled" : ""}"></div>`)
           .join("");
+      }
+      if (exitCounterRef.current) {
+        exitCounterRef.current.textContent = `EXIT ${String(info.passCount + 1).padStart(2, "0")}`;
       }
     };
     return () => {
@@ -65,6 +69,9 @@ export default function GameHUD({ frameHandlerRef, stageLabel, judgement, pointe
     <div className="hud-root">
       <div className="hud-dot" />
       <div ref={promptRef} className="hud-prompt" />
+      <div ref={exitCounterRef} className="hud-exit-counter">
+        EXIT 01
+      </div>
       <div ref={stageLabelRef} className="hud-stage-label">
         <div className="num">STAGE {String(stageLabel?.stageId ?? 1).padStart(2, "0")}</div>
         <div className="sub">{stageLabel?.subtitle}</div>
