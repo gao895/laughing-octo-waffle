@@ -11,6 +11,7 @@ import EndingScreen from "./ui/EndingScreen";
 import HowToPlay from "./ui/HowToPlay";
 import DebugMenu from "./ui/DebugMenu";
 import TouchControls from "./ui/TouchControls";
+import JumpscareOverlay from "./ui/JumpscareOverlay";
 
 export default function App() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -29,6 +30,7 @@ export default function App() {
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [showDebugMenu, setShowDebugMenu] = useState(false);
   const [settings, setSettings] = useState<SettingsData | null>(null);
+  const [jumpscareTrigger, setJumpscareTrigger] = useState(0);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -43,6 +45,7 @@ export default function App() {
       onStageClear: (stageId, isFinal) => setStageClearInfo({ stageId, isFinal }),
       onFrame: (info) => frameHandlerRef.current?.(info),
       onPointerLockLost: () => setPointerLockLost(true),
+      onJumpscare: () => setJumpscareTrigger((v) => v + 1),
     });
 
     setSettings(gm.saveManager.getSettings());
@@ -181,6 +184,8 @@ export default function App() {
       {showDebugMenu && gameManagerRef.current && (
         <DebugMenu gameManager={gameManagerRef.current} onClose={() => setShowDebugMenu(false)} />
       )}
+
+      <JumpscareOverlay trigger={jumpscareTrigger} flashEnabled={settings?.flashEffects ?? true} />
     </div>
   );
 }

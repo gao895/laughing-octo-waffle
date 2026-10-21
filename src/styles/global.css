@@ -576,3 +576,78 @@ body,
   font-size: 0.9rem;
   border-radius: 8px;
 }
+
+/* ---------- ジャンプスケア ---------- */
+.jumpscare-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(25, 0, 0, 0.94) 0%, #000 75%);
+  animation: jumpscareFlash 0.26s ease-out forwards;
+}
+
+@keyframes jumpscareFlash {
+  0% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.jumpscare-face {
+  position: relative;
+  width: 60vmin;
+  height: 60vmin;
+  animation: jumpscareZoom 0.26s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes jumpscareZoom {
+  0% {
+    transform: scale(1.6);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.jumpscare-eye {
+  position: absolute;
+  top: 36%;
+  width: 17%;
+  height: 11%;
+  background: radial-gradient(circle, #fff 0%, #ffd9d9 32%, #5c0000 72%, transparent 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 44px 12px rgba(255, 255, 255, 0.55);
+}
+
+.jumpscare-eye.left {
+  left: 21%;
+}
+
+.jumpscare-eye.right {
+  right: 21%;
+}
+
+.jumpscare-mouth {
+  position: absolute;
+  top: 56%;
+  left: 50%;
+  width: 32%;
+  height: 24%;
+  transform: translateX(-50%);
+  background: #020000;
+  border: 3px solid #4a0000;
+  border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+  box-shadow: inset 0 0 30px 6px rgba(0, 0, 0, 0.8);
+}

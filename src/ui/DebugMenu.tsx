@@ -52,6 +52,7 @@ export default function DebugMenu({ gameManager, onClose }: Props) {
       >
         GOD MODE: {godMode ? "ON" : "OFF"}
       </button>
+      <button onClick={() => gameManager.triggerJumpscare()}>ジャンプスケア再生</button>
       <h3>&nbsp;</h3>
       <button onClick={onClose}>閉じる (F1)</button>
     </div>

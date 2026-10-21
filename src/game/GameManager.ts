@@ -38,6 +38,8 @@ export interface GameManagerCallbacks {
   onStageClear?: (stageId: number, isFinalStage: boolean) => void;
   onFrame?: (info: HudFrameInfo) => void;
   onPointerLockLost?: () => void;
+  /** ジャンプスケア発生の通知（UIの一瞬のフラッシュ演出トリガー用） */
+  onJumpscare?: () => void;
 }
 
 const JUDGEMENT_LOCK_SEC = 1.4;
@@ -224,6 +226,17 @@ export class GameManager {
     }
   }
 
+  /**
+   * ジャンプスケア演出。乱用を避けるため、BAD END直前とボス異変を
+   * 正しく見抜いてステージクリアする瞬間のみに限定して使用する。
+   * （DebugMenuからの動作確認用に公開メソッドとしても呼べる）
+   */
+  triggerJumpscare() {
+    this.cameraManager.shake(4.5);
+    this.audioManager.playStinger();
+    this.callbacks.onJumpscare?.();
+  }
+
   private submitAction(action: PlayerAction) {
     if (!this.loopManager || !this.stageManager.current) return;
     const result = this.anomalyManager.judge(action);
@@ -238,20 +251,30 @@ export class GameManager {
 
     window.setTimeout(() => {
       if (outcome.gameOver) {
-        this.saveManager.addMistake();
-        this.endingManager.resolveBadEnd();
-        this.setState("GAME_OVER");
-        this.playerController.exitLock();
-        this.callbacks.onGameOver?.();
+        // 失敗の瞬間だけジャンプスケアを使用する。演出を見せてから結果画面へ切り替える。
+        this.triggerJumpscare();
+        window.setTimeout(() => {
+          this.saveManager.addMistake();
+          this.endingManager.resolveBadEnd();
+          this.setState("GAME_OVER");
+          this.playerController.exitLock();
+          this.callbacks.onGameOver?.();
+        }, 450);
         return;
       }
       if (outcome.stageCleared) {
-        const config = getStageConfig(this.currentStageId);
-        const isFinal = !!config && this.currentStageId === 10;
-        this.endingManager.resolveStageClear(this.currentStageId, isFinal);
-        this.setState("STAGE_CLEAR");
-        this.playerController.exitLock();
-        this.callbacks.onStageClear?.(this.currentStageId, isFinal);
+        if (result.isBossClear) this.triggerJumpscare();
+        window.setTimeout(
+          () => {
+            const config = getStageConfig(this.currentStageId);
+            const isFinal = !!config && this.currentStageId === 10;
+            this.endingManager.resolveStageClear(this.currentStageId, isFinal);
+            this.setState("STAGE_CLEAR");
+            this.playerController.exitLock();
+            this.callbacks.onStageClear?.(this.currentStageId, isFinal);
+          },
+          result.isBossClear ? 450 : 0
+        );
         return;
       }
       // 次のループへ
