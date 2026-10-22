@@ -27,6 +27,11 @@ function halfWidthAt(_z: number): number {
   return HALF_WIDTH;
 }
 
+// ボス異変で人影がプレイヤーへ走って向かってくる演出の共通パラメータ
+const BOSS_CHARGE_SPEED = 2.6;
+const BOSS_CHARGE_STOP_DIST = 0.55;
+const BOSS_CHARGE_FOOTSTEP_INTERVAL = 0.28;
+
 export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audio: AudioManager): StageRuntime {
   // --- マテリアル/テクスチャ ---
   const wallTex = makeConcreteTexture("#26282e");
@@ -158,6 +163,9 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   finalDouble.position.set(0, 0, DOOR_Z + 1.8);
   finalDouble.visible = false;
   group.add(finalDouble);
+  const finalDoubleBasePos = finalDouble.position.clone();
+  let finalDoubleCharging = false;
+  let finalDoubleFootstepTimer = 0;
 
   // --- 壁沿いの掲示物（8番出口のように、毎回同じはずのものを並べて密度を作る） ---
   const noticeTextures = [0, 1, 2, 3].map((v) => makeNoticePosterTexture(v));
@@ -213,6 +221,9 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
       posterMat.needsUpdate = true;
       mirrorFigure.visible = false;
       finalDouble.visible = false;
+      finalDouble.position.copy(finalDoubleBasePos);
+      finalDoubleCharging = false;
+      finalDoubleFootstepTimer = 0;
       heartbeatActive = false;
       heartbeatTimer = 0;
 
@@ -248,6 +259,7 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
           break;
         case "final_double":
           finalDouble.visible = true;
+          finalDoubleCharging = true;
           heartbeatActive = true;
           break;
         default:
@@ -275,6 +287,22 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
         if (dist < 4) {
           distantFigureHiddenByProximity = true;
           distantFigure.visible = false;
+        }
+      }
+
+      if (finalDoubleCharging) {
+        const dx = playerPos.x - finalDouble.position.x;
+        const dz = playerPos.z - finalDouble.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > BOSS_CHARGE_STOP_DIST) {
+          finalDouble.position.x += (dx / dist) * BOSS_CHARGE_SPEED * dt;
+          finalDouble.position.z += (dz / dist) * BOSS_CHARGE_SPEED * dt;
+          finalDouble.rotation.y = Math.atan2(dx, dz);
+        }
+        finalDoubleFootstepTimer -= dt;
+        if (finalDoubleFootstepTimer <= 0) {
+          finalDoubleFootstepTimer = BOSS_CHARGE_FOOTSTEP_INTERVAL;
+          audio.playFootstep();
         }
       }
 

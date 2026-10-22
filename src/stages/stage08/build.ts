@@ -43,6 +43,11 @@ function halfWidthAt(_z: number): number {
   return HALF_WIDTH;
 }
 
+// ボス異変で人影がプレイヤーへ走って向かってくる演出の共通パラメータ
+const BOSS_CHARGE_SPEED = 2.6;
+const BOSS_CHARGE_STOP_DIST = 0.55;
+const BOSS_CHARGE_FOOTSTEP_INTERVAL = 0.28;
+
 /** 右壁(side=1)/左壁(side=-1)に置く物の向きを、通路中央を向くよう揃える */
 function sideRotationY(side: 1 | -1): number {
   return side === 1 ? -Math.PI / 2 : Math.PI / 2;
@@ -180,13 +185,17 @@ export function buildStage08(scene: THREE.Scene, lighting: LightingManager, audi
 
   // --- ボス: 出口前に集まった村人たち（z=DOOR_Z+2.4） ---
   const BOSS_Z = DOOR_Z + 2.4;
-  const gatheredVillagers = [-0.45, 0, 0.45].map((dx) => {
+  const VILLAGER_OFFSETS = [-0.45, 0, 0.45];
+  const gatheredVillagers = VILLAGER_OFFSETS.map((dx) => {
     const villager = buildVillagerFigure();
     villager.position.set(dx, 0, BOSS_Z);
     villager.visible = false;
     group.add(villager);
     return villager;
   });
+  const villagersGroupPos = new THREE.Vector3(0, 0, BOSS_Z);
+  let villagersCharging = false;
+  let villagersFootstepTimer = 0;
 
   // --- 村道沿いの立て看板 ---
   const arrowTextures = [makeArrowSignTexture("right"), makeArrowSignTexture("left")];
@@ -235,6 +244,13 @@ export function buildStage08(scene: THREE.Scene, lighting: LightingManager, audi
       villagerWatching = false;
       specialVillager.rotation.y = specialVillagerBaseYaw;
       for (const v of gatheredVillagers) v.visible = false;
+      villagersGroupPos.set(0, 0, BOSS_Z);
+      for (let i = 0; i < gatheredVillagers.length; i++) {
+        gatheredVillagers[i].position.set(VILLAGER_OFFSETS[i], 0, BOSS_Z);
+        gatheredVillagers[i].rotation.y = 0;
+      }
+      villagersCharging = false;
+      villagersFootstepTimer = 0;
       heartbeatActive = false;
       heartbeatTimer = 0;
 
@@ -274,6 +290,7 @@ export function buildStage08(scene: THREE.Scene, lighting: LightingManager, audi
           break;
         case "villagers_gathered":
           for (const v of gatheredVillagers) v.visible = true;
+          villagersCharging = true;
           heartbeatActive = true;
           break;
         default:
@@ -282,6 +299,26 @@ export function buildStage08(scene: THREE.Scene, lighting: LightingManager, audi
     },
 
     update(dt: number, playerPos: THREE.Vector3) {
+      if (villagersCharging) {
+        const dx = playerPos.x - villagersGroupPos.x;
+        const dz = playerPos.z - villagersGroupPos.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > BOSS_CHARGE_STOP_DIST) {
+          villagersGroupPos.x += (dx / dist) * BOSS_CHARGE_SPEED * dt;
+          villagersGroupPos.z += (dz / dist) * BOSS_CHARGE_SPEED * dt;
+          const yaw = Math.atan2(dx, dz);
+          for (let i = 0; i < gatheredVillagers.length; i++) {
+            gatheredVillagers[i].position.set(villagersGroupPos.x + VILLAGER_OFFSETS[i], 0, villagersGroupPos.z);
+            gatheredVillagers[i].rotation.y = yaw;
+          }
+        }
+        villagersFootstepTimer -= dt;
+        if (villagersFootstepTimer <= 0) {
+          villagersFootstepTimer = BOSS_CHARGE_FOOTSTEP_INTERVAL;
+          audio.playFootstep();
+        }
+      }
+
       if (bellSwaying) {
         villageBell.ropePivot.rotation.z = Math.sin(performance.now() * 0.005) * 0.3;
       } else {

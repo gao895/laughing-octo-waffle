@@ -42,6 +42,11 @@ function halfWidthAt(_z: number): number {
   return HALF_WIDTH;
 }
 
+// ボス異変で人影がプレイヤーへ走って向かってくる演出の共通パラメータ
+const BOSS_CHARGE_SPEED = 2.6;
+const BOSS_CHARGE_STOP_DIST = 0.55;
+const BOSS_CHARGE_FOOTSTEP_INTERVAL = 0.28;
+
 /** 右壁(side=1)/左壁(side=-1)に置く物の向きを、通路中央を向くよう揃える */
 function sideRotationY(side: 1 | -1): number {
   return side === 1 ? -Math.PI / 2 : Math.PI / 2;
@@ -193,6 +198,9 @@ export function buildStage07(scene: THREE.Scene, lighting: LightingManager, audi
   mascotCostume.group.position.set(0, 0, BOSS_Z);
   mascotCostume.group.visible = false;
   group.add(mascotCostume.group);
+  const mascotCostumeBasePos = mascotCostume.group.position.clone();
+  let mascotCostumeCharging = false;
+  let mascotCostumeFootstepTimer = 0;
 
   // --- 園内沿いの立て看板（8番出口のように、毎回同じはずのものを並べて密度を作る） ---
   const noticeTextures = [0, 1, 2, 3].map((v) => makeParkNoticeTexture(v));
@@ -255,6 +263,9 @@ export function buildStage07(scene: THREE.Scene, lighting: LightingManager, audi
       ferrisTurning = false;
       ferrisWheel.rotation.z = 0;
       mascotCostume.group.visible = false;
+      mascotCostume.group.position.copy(mascotCostumeBasePos);
+      mascotCostumeCharging = false;
+      mascotCostumeFootstepTimer = 0;
       heartbeatActive = false;
       heartbeatTimer = 0;
 
@@ -294,6 +305,7 @@ export function buildStage07(scene: THREE.Scene, lighting: LightingManager, audi
           break;
         case "costume_person_waiting":
           mascotCostume.group.visible = true;
+          mascotCostumeCharging = true;
           heartbeatActive = true;
           break;
         default:
@@ -302,6 +314,22 @@ export function buildStage07(scene: THREE.Scene, lighting: LightingManager, audi
     },
 
     update(dt: number, playerPos: THREE.Vector3) {
+      if (mascotCostumeCharging) {
+        const dx = playerPos.x - mascotCostume.group.position.x;
+        const dz = playerPos.z - mascotCostume.group.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > BOSS_CHARGE_STOP_DIST) {
+          mascotCostume.group.position.x += (dx / dist) * BOSS_CHARGE_SPEED * dt;
+          mascotCostume.group.position.z += (dz / dist) * BOSS_CHARGE_SPEED * dt;
+          mascotCostume.group.rotation.y = Math.atan2(dx, dz);
+        }
+        mascotCostumeFootstepTimer -= dt;
+        if (mascotCostumeFootstepTimer <= 0) {
+          mascotCostumeFootstepTimer = BOSS_CHARGE_FOOTSTEP_INTERVAL;
+          audio.playFootstep();
+        }
+      }
+
       if (ferrisTurning) {
         ferrisWheel.rotation.z += dt * 0.25;
       }

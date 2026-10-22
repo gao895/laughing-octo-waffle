@@ -40,6 +40,11 @@ function halfWidthAt(_z: number): number {
   return HALF_WIDTH;
 }
 
+// ボス異変で人影がプレイヤーへ走って向かってくる演出の共通パラメータ
+const BOSS_CHARGE_SPEED = 2.6;
+const BOSS_CHARGE_STOP_DIST = 0.55;
+const BOSS_CHARGE_FOOTSTEP_INTERVAL = 0.28;
+
 /** 右壁(side=1)/左壁(side=-1)に置く物の向きを、廊下中央を向くよう揃える */
 function sideRotationY(side: 1 | -1): number {
   return side === 1 ? -Math.PI / 2 : Math.PI / 2;
@@ -168,6 +173,9 @@ export function buildStage09(scene: THREE.Scene, lighting: LightingManager, audi
   intruder.position.set(0, 0, BOSS_Z + 0.45);
   intruder.visible = false;
   group.add(intruder);
+  const intruderBasePos = intruder.position.clone();
+  let intruderCharging = false;
+  let intruderFootstepTimer = 0;
 
   // --- 廊下沿いの立て看板 ---
   const arrowTextures = [makeArrowSignTexture("right"), makeArrowSignTexture("left")];
@@ -224,6 +232,9 @@ export function buildStage09(scene: THREE.Scene, lighting: LightingManager, audi
       livingRoom.tvMat.needsUpdate = true;
       livingRoom.sittingFigure.visible = false;
       intruder.visible = false;
+      intruder.position.copy(intruderBasePos);
+      intruderCharging = false;
+      intruderFootstepTimer = 0;
       heartbeatActive = false;
       heartbeatTimer = 0;
 
@@ -266,6 +277,7 @@ export function buildStage09(scene: THREE.Scene, lighting: LightingManager, audi
           break;
         case "someone_in_your_room":
           intruder.visible = true;
+          intruderCharging = true;
           heartbeatActive = true;
           break;
         default:
@@ -273,9 +285,25 @@ export function buildStage09(scene: THREE.Scene, lighting: LightingManager, audi
       }
     },
 
-    update(dt: number) {
+    update(dt: number, playerPos: THREE.Vector3) {
       if (clockTicking) {
         clock.handPivot.rotation.z -= dt * 1.2;
+      }
+
+      if (intruderCharging) {
+        const dx = playerPos.x - intruder.position.x;
+        const dz = playerPos.z - intruder.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > BOSS_CHARGE_STOP_DIST) {
+          intruder.position.x += (dx / dist) * BOSS_CHARGE_SPEED * dt;
+          intruder.position.z += (dz / dist) * BOSS_CHARGE_SPEED * dt;
+          intruder.rotation.y = Math.atan2(dx, dz);
+        }
+        intruderFootstepTimer -= dt;
+        if (intruderFootstepTimer <= 0) {
+          intruderFootstepTimer = BOSS_CHARGE_FOOTSTEP_INTERVAL;
+          audio.playFootstep();
+        }
       }
 
       if (heartbeatActive) {

@@ -33,6 +33,11 @@ function halfWidthAt(_z: number): number {
   return HALF_WIDTH;
 }
 
+// ボス異変で人影がプレイヤーへ走って向かってくる演出の共通パラメータ
+const BOSS_CHARGE_SPEED = 2.6;
+const BOSS_CHARGE_STOP_DIST = 0.55;
+const BOSS_CHARGE_FOOTSTEP_INTERVAL = 0.28;
+
 const SHIDE_DEFAULT_COUNT = 5;
 const STEPS_DEFAULT_COUNT = 4;
 
@@ -187,6 +192,9 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
   facelessFigure.position.set(0, 0, FINAL_TORII_Z - 0.4);
   facelessFigure.visible = false;
   group.add(facelessFigure);
+  const facelessFigureBasePos = facelessFigure.position.clone();
+  let facelessFigureCharging = false;
+  let facelessFigureFootstepTimer = 0;
 
   // --- 参道沿いの案内札（8番出口のように、毎回同じはずのものを並べて密度を作る） ---
   const noticeTextures = [0, 1, 2, 3].map((v) => makeShrineNoticeTexture(v));
@@ -248,6 +256,9 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
       bellSwaying = false;
       bellHumTimer = 0;
       facelessFigure.visible = false;
+      facelessFigure.position.copy(facelessFigureBasePos);
+      facelessFigureCharging = false;
+      facelessFigureFootstepTimer = 0;
       heartbeatActive = false;
       heartbeatTimer = 0;
 
@@ -284,6 +295,7 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
           break;
         case "faceless_self":
           facelessFigure.visible = true;
+          facelessFigureCharging = true;
           heartbeatActive = true;
           break;
         default:
@@ -291,7 +303,23 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
       }
     },
 
-    update(dt: number) {
+    update(dt: number, playerPos: THREE.Vector3) {
+      if (facelessFigureCharging) {
+        const dx = playerPos.x - facelessFigure.position.x;
+        const dz = playerPos.z - facelessFigure.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > BOSS_CHARGE_STOP_DIST) {
+          facelessFigure.position.x += (dx / dist) * BOSS_CHARGE_SPEED * dt;
+          facelessFigure.position.z += (dz / dist) * BOSS_CHARGE_SPEED * dt;
+          facelessFigure.rotation.y = Math.atan2(dx, dz);
+        }
+        facelessFigureFootstepTimer -= dt;
+        if (facelessFigureFootstepTimer <= 0) {
+          facelessFigureFootstepTimer = BOSS_CHARGE_FOOTSTEP_INTERVAL;
+          audio.playFootstep();
+        }
+      }
+
       if (bellSwaying) {
         bellRopePivot.rotation.z = Math.sin(performance.now() * 0.006) * 0.18;
         bellHumTimer -= dt;

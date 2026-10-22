@@ -32,6 +32,11 @@ function halfWidthAt(_z: number): number {
   return HALF_WIDTH;
 }
 
+// ボス異変で人影がプレイヤーへ走って向かってくる演出の共通パラメータ
+const BOSS_CHARGE_SPEED = 2.6;
+const BOSS_CHARGE_STOP_DIST = 0.55;
+const BOSS_CHARGE_FOOTSTEP_INTERVAL = 0.28;
+
 /** 右壁(side=1)/左壁(side=-1)に置く物の向きを、通路中央を向くよう揃える */
 function sideRotationY(side: 1 | -1): number {
   return side === 1 ? -Math.PI / 2 : Math.PI / 2;
@@ -127,6 +132,9 @@ export function buildStage10(scene: THREE.Scene, lighting: LightingManager, audi
   const entityLight = new THREE.PointLight(0xaac0ff, 0, 3.5, 2);
   entityLight.position.set(0, 1.7, BOSS_Z - 0.5);
   group.add(entityLight);
+  const entityBasePos = entity.position.clone();
+  let entityCharging = false;
+  let entityFootstepTimer = 0;
 
   // --- 状態管理 ---
   let heartbeatTimer = 0;
@@ -145,7 +153,12 @@ export function buildStage10(scene: THREE.Scene, lighting: LightingManager, audi
       for (const pane of memoryPanes.values()) pane.mesh.visible = false;
       walkingSelf.visible = false;
       entity.visible = false;
+      entity.position.copy(entityBasePos);
+      entity.rotation.y = 0;
       entityLight.intensity = 0;
+      entityLight.position.set(entityBasePos.x, 1.7, entityBasePos.z - 0.5);
+      entityCharging = false;
+      entityFootstepTimer = 0;
       heartbeatActive = false;
       heartbeatTimer = 0;
 
@@ -163,6 +176,7 @@ export function buildStage10(scene: THREE.Scene, lighting: LightingManager, audi
           walkingSelf.visible = true;
           entity.visible = true;
           entityLight.intensity = 3.2;
+          entityCharging = true;
           heartbeatActive = true;
           audio.playStinger();
           break;
@@ -171,7 +185,25 @@ export function buildStage10(scene: THREE.Scene, lighting: LightingManager, audi
       }
     },
 
-    update(dt: number) {
+    update(dt: number, playerPos: THREE.Vector3) {
+      if (entityCharging) {
+        const dx = playerPos.x - entity.position.x;
+        const dz = playerPos.z - entity.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > BOSS_CHARGE_STOP_DIST) {
+          entity.position.x += (dx / dist) * BOSS_CHARGE_SPEED * dt;
+          entity.position.z += (dz / dist) * BOSS_CHARGE_SPEED * dt;
+          entity.rotation.y = Math.atan2(dx, dz);
+          entityLight.position.x = entity.position.x;
+          entityLight.position.z = entity.position.z - 0.5;
+        }
+        entityFootstepTimer -= dt;
+        if (entityFootstepTimer <= 0) {
+          entityFootstepTimer = BOSS_CHARGE_FOOTSTEP_INTERVAL;
+          audio.playFootstep();
+        }
+      }
+
       if (heartbeatActive) {
         heartbeatTimer -= dt;
         if (heartbeatTimer <= 0) {

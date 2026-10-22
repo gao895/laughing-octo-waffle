@@ -33,6 +33,11 @@ function halfWidthAt(_z: number): number {
   return HALF_WIDTH;
 }
 
+// ボス異変で人影がプレイヤーへ走って向かってくる演出の共通パラメータ
+const BOSS_CHARGE_SPEED = 2.6;
+const BOSS_CHARGE_STOP_DIST = 0.55;
+const BOSS_CHARGE_FOOTSTEP_INTERVAL = 0.28;
+
 export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audio: AudioManager): StageRuntime {
   // --- マテリアル/テクスチャ ---
   const wallTex = makeHotelWallpaperTexture();
@@ -175,6 +180,9 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
   bossFigure.position.set(0, 0, BOSS_Z);
   bossFigure.visible = false;
   group.add(bossFigure);
+  const bossFigureBasePos = bossFigure.position.clone();
+  let bossFigureCharging = false;
+  let bossFigureFootstepTimer = 0;
 
   // --- 廊下沿いの客室ドア（8番出口のように、毎回同じはずのものを並べて密度を作る）。
   // 番号だけのプレートではなく、実際の扉の形（枠+パネル+ノブ+覗き穴）を持たせる。
@@ -261,6 +269,9 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
       cartSlot.position.x = CART_BASE_X;
       mirrorFigure.visible = false;
       bossFigure.visible = false;
+      bossFigure.position.copy(bossFigureBasePos);
+      bossFigureCharging = false;
+      bossFigureFootstepTimer = 0;
       heartbeatActive = false;
       heartbeatTimer = 0;
 
@@ -302,6 +313,7 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
           break;
         case "key_double":
           bossFigure.visible = true;
+          bossFigureCharging = true;
           heartbeatActive = true;
           break;
         default:
@@ -309,7 +321,23 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
       }
     },
 
-    update(dt: number) {
+    update(dt: number, playerPos: THREE.Vector3) {
+      if (bossFigureCharging) {
+        const dx = playerPos.x - bossFigure.position.x;
+        const dz = playerPos.z - bossFigure.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > BOSS_CHARGE_STOP_DIST) {
+          bossFigure.position.x += (dx / dist) * BOSS_CHARGE_SPEED * dt;
+          bossFigure.position.z += (dz / dist) * BOSS_CHARGE_SPEED * dt;
+          bossFigure.rotation.y = Math.atan2(dx, dz);
+        }
+        bossFigureFootstepTimer -= dt;
+        if (bossFigureFootstepTimer <= 0) {
+          bossFigureFootstepTimer = BOSS_CHARGE_FOOTSTEP_INTERVAL;
+          audio.playFootstep();
+        }
+      }
+
       if (heartbeatActive) {
         heartbeatTimer -= dt;
         if (heartbeatTimer <= 0) {

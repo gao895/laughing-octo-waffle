@@ -34,6 +34,11 @@ function halfWidthAt(_z: number): number {
   return HALF_WIDTH;
 }
 
+// ボス異変で人影がプレイヤーへ走って向かってくる演出の共通パラメータ
+const BOSS_CHARGE_SPEED = 2.6;
+const BOSS_CHARGE_STOP_DIST = 0.55;
+const BOSS_CHARGE_FOOTSTEP_INTERVAL = 0.28;
+
 // 両壁で全く同じ位置・長さのベンチ区画(ベイ)を並べ、実際の通勤電車のように
 // 左右対称なロングシート+窓の連続にする。異変用の小道具はこのベイの上に
 // 「乗せる」形で後付けし、座席そのものの構造は左右で変えない。
@@ -186,6 +191,9 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
   anotherPassenger.position.set(0, 0, BOSS_Z);
   anotherPassenger.visible = false;
   group.add(anotherPassenger);
+  const anotherPassengerBasePos = anotherPassenger.position.clone();
+  let anotherPassengerCharging = false;
+  let anotherPassengerFootstepTimer = 0;
 
   // --- ドア付近の立席スペースに握り棒 ---
   for (const z of [11, -21.5]) {
@@ -248,6 +256,9 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
       windowFigureHiddenByProximity = false;
       reflectFigure.visible = false;
       anotherPassenger.visible = false;
+      anotherPassenger.position.copy(anotherPassengerBasePos);
+      anotherPassengerCharging = false;
+      anotherPassengerFootstepTimer = 0;
       heartbeatActive = false;
       heartbeatTimer = 0;
 
@@ -289,6 +300,7 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
           break;
         case "another_passenger":
           anotherPassenger.visible = true;
+          anotherPassengerCharging = true;
           heartbeatActive = true;
           break;
         default:
@@ -297,6 +309,22 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
     },
 
     update(dt: number, playerPos: THREE.Vector3) {
+      if (anotherPassengerCharging) {
+        const dx = playerPos.x - anotherPassenger.position.x;
+        const dz = playerPos.z - anotherPassenger.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > BOSS_CHARGE_STOP_DIST) {
+          anotherPassenger.position.x += (dx / dist) * BOSS_CHARGE_SPEED * dt;
+          anotherPassenger.position.z += (dz / dist) * BOSS_CHARGE_SPEED * dt;
+          anotherPassenger.rotation.y = Math.atan2(dx, dz);
+        }
+        anotherPassengerFootstepTimer -= dt;
+        if (anotherPassengerFootstepTimer <= 0) {
+          anotherPassengerFootstepTimer = BOSS_CHARGE_FOOTSTEP_INTERVAL;
+          audio.playFootstep();
+        }
+      }
+
       if (strapSwaying) {
         const strap = strapHandle.straps[SWAY_STRAP_INDEX];
         strap.rotation.z = Math.sin(performance.now() * 0.004) * 0.5;
