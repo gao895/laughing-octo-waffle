@@ -13,6 +13,8 @@ import {
   makeCutoutBoardTexture,
   makePrizeShelfTexture,
   makeMascotFaceTexture,
+  makeWoodPlankTexture,
+  makeShutterTexture,
   buildTicketBooth,
   buildCarousel,
   buildCutoutBoard,
@@ -88,17 +90,17 @@ export function buildStage07(scene: THREE.Scene, lighting: LightingManager, audi
   archPillarR.position.set(HALF_WIDTH - 0.15, 1.3, ARCH_Z);
   const archBeam = new THREE.Mesh(new THREE.BoxGeometry(HALF_WIDTH * 2 - 0.1, 0.22, 0.22), archMat);
   archBeam.position.set(0, 2.5, ARCH_Z);
-  const archSign = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.9, 0.35),
-    new THREE.MeshBasicMaterial({ map: makeSignTexture("WONDER", "#ffd94a"), toneMapped: false })
-  );
+  const archSignTex = makeSignTexture("WONDER", "#ffd94a");
+  const archSign = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.35), new THREE.MeshBasicMaterial({ map: archSignTex, toneMapped: false }));
   archSign.position.set(0, 2.5, ARCH_Z - 0.12);
   group.add(archPillarL, archPillarR, archBeam, archSign);
 
   // --- チケットブース（z=9, 右） ---
   const TICKET_Z = 9;
   const ticketSignTex = makeSignTexture("TICKET", "#ffcc33");
-  const ticketBooth = buildTicketBooth(ticketSignTex);
+  const ticketWoodTex = makeWoodPlankTexture("#8a6a3a");
+  const ticketShutterTex = makeShutterTexture();
+  const ticketBooth = buildTicketBooth(ticketSignTex, ticketWoodTex, ticketShutterTex);
   ticketBooth.group.position.set(HALF_WIDTH - 0.55, 0, TICKET_Z);
   ticketBooth.group.rotation.y = sideRotationY(1);
   group.add(ticketBooth.group);
@@ -106,7 +108,8 @@ export function buildStage07(scene: THREE.Scene, lighting: LightingManager, audi
   // --- メリーゴーランド（z=4.5, 左） ---
   const CAROUSEL_Z = 4.5;
   const canopyTex = makeCarouselCanopyTexture();
-  const carousel: CarouselHandle = buildCarousel(0.55, HORSE_COUNT, canopyTex);
+  const carouselBaseTex = makeWoodPlankTexture("#6a5a3a");
+  const carousel: CarouselHandle = buildCarousel(0.55, HORSE_COUNT, canopyTex, carouselBaseTex);
   carousel.group.position.set(-(HALF_WIDTH - 0.85), 0, CAROUSEL_Z);
   group.add(carousel.group);
 
@@ -114,24 +117,34 @@ export function buildStage07(scene: THREE.Scene, lighting: LightingManager, audi
   const CUTOUT_Z = 0.75;
   const cutoutTexNormal = makeCutoutBoardTexture(false);
   const cutoutTexFace = makeCutoutBoardTexture(true);
-  const cutoutBoard: CutoutBoardHandle = buildCutoutBoard(cutoutTexNormal);
+  const cutoutWoodTex = makeWoodPlankTexture("#caa15a");
+  const cutoutBoard: CutoutBoardHandle = buildCutoutBoard(cutoutTexNormal, cutoutWoodTex);
   cutoutBoard.group.position.set(HALF_WIDTH - 0.3, 0, CUTOUT_Z);
   cutoutBoard.group.rotation.y = sideRotationY(1);
   group.add(cutoutBoard.group);
 
   // --- 射的屋台（z=-3, 左） ---
   const STALL_Z = -3;
-  const stallMat = new THREE.MeshStandardMaterial({ color: 0x3a2a1a, roughness: 0.85 });
+  const stallWoodTex = makeWoodPlankTexture("#3a2c1c");
+  stallWoodTex.repeat.set(2, 1);
+  const stallMat = new THREE.MeshStandardMaterial({ map: stallWoodTex, roughness: 0.85 });
   const stallCounter = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.5, 0.45), stallMat);
   const stallX = -(HALF_WIDTH - 0.45);
   stallCounter.position.set(stallX, 0.25, STALL_Z);
+  const stallShutterTex = makeShutterTexture();
+  stallShutterTex.repeat.set(3, 1);
+  const stallShutter = new THREE.Mesh(
+    new THREE.BoxGeometry(0.95, 0.45, 0.04),
+    new THREE.MeshStandardMaterial({ map: stallShutterTex, roughness: 0.7, metalness: 0.2 })
+  );
+  stallShutter.position.set(stallX, 0.73, STALL_Z - 0.2);
   const prizeTexNormal = makePrizeShelfTexture(false);
   const prizeTexAnomaly = makePrizeShelfTexture(true);
   const prizeMat = new THREE.MeshBasicMaterial({ map: prizeTexNormal, toneMapped: false });
   const prizeShelf = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.45), prizeMat);
   prizeShelf.position.set(stallX + 0.46, 0.75, STALL_Z);
   prizeShelf.rotation.y = sideRotationY(-1);
-  group.add(stallCounter, prizeShelf);
+  group.add(stallCounter, stallShutter, prizeShelf);
 
   // --- マスコット像（z=-7.5, 右） ---
   const MASCOT_Z = -7.5;
@@ -145,7 +158,10 @@ export function buildStage07(scene: THREE.Scene, lighting: LightingManager, audi
 
   // --- 風船売り場（z=-11.5, 左） ---
   const BALLOON_Z = -11.5;
-  const balloonCart: BalloonCartHandle = buildBalloonCart();
+  const balloonCartTex = makeWoodPlankTexture("#6a4a2a");
+  const balloonCanopyTex = makeCarouselCanopyTexture();
+  const balloonSignTex = makeSignTexture("BALLOON", "#ff6ab4");
+  const balloonCart: BalloonCartHandle = buildBalloonCart(balloonCartTex, balloonCanopyTex, balloonSignTex);
   balloonCart.group.position.set(-(HALF_WIDTH - 0.5), 0, BALLOON_Z);
   balloonCart.group.rotation.y = sideRotationY(-1);
   group.add(balloonCart.group);
@@ -298,14 +314,24 @@ export function buildStage07(scene: THREE.Scene, lighting: LightingManager, audi
       fenceTex.dispose();
       skyTex.dispose();
       signTexNormal.dispose();
+      archSignTex.dispose();
       ticketSignTex.dispose();
+      ticketWoodTex.dispose();
+      ticketShutterTex.dispose();
       canopyTex.dispose();
+      carouselBaseTex.dispose();
       cutoutTexNormal.dispose();
       cutoutTexFace.dispose();
+      cutoutWoodTex.dispose();
+      stallWoodTex.dispose();
+      stallShutterTex.dispose();
       prizeTexNormal.dispose();
       prizeTexAnomaly.dispose();
       mascotFaceTexNormal.dispose();
       mascotFaceTexWide.dispose();
+      balloonCartTex.dispose();
+      balloonCanopyTex.dispose();
+      balloonSignTex.dispose();
       costumeFaceTex.dispose();
       for (const t of noticeTextures) t.dispose();
       for (const t of arrowTextures) t.dispose();
