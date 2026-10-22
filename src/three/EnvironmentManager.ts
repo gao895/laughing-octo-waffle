@@ -3608,3 +3608,59 @@ const HOME_FIGURE_COLORS: HumanoidColors = { skin: 0xc9b9a3, outfit: 0x8a8a92, l
 export function buildHomeIntruderFigure(): THREE.Group {
   return buildHumanoidFigure(HOME_FIGURE_COLORS);
 }
+
+// ============================================================
+// STAGE10「異界」用テクスチャ・小道具
+// ============================================================
+
+/** 異界の壁。どこにも属さない、ひび割れた光が走る虚無のテクスチャ */
+export function makeOtherworldWallTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 128);
+  noiseFill(ctx, 128, 128, "#121018", 10);
+  ctx.strokeStyle = "rgba(170,200,255,0.18)";
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 10; i++) {
+    let x = Math.random() * 128;
+    let y = 0;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    while (y < 128) {
+      x += (Math.random() - 0.5) * 18;
+      y += 10 + Math.random() * 14;
+      ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 異界の床。壁と同系統だが、より暗く沈んだ質感にする */
+export function makeOtherworldFloorTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 128);
+  noiseFill(ctx, 128, 128, "#0a0912", 8);
+  ctx.strokeStyle = "rgba(130,150,200,0.1)";
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= 128; x += 32) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 128);
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(1, 24);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+const OTHERWORLD_ENTITY_COLORS: HumanoidColors = { skin: 0x16161e, outfit: 0x0e0e14, legs: 0x0a0a10 };
+
+/** 異界の最奥に立つ、誰でもない誰か（STAGE10ボス用）。縦に引き伸ばして異様な背丈にする */
+export function buildOtherworldEntity(): THREE.Group {
+  const group = buildHumanoidFigure(OTHERWORLD_ENTITY_COLORS);
+  group.scale.set(1.05, 1.4, 1.05);
+  return group;
+}
