@@ -22,6 +22,7 @@ export default function GameHUD({ frameHandlerRef, stageLabel, judgement, pointe
   const judgementRef = useRef<HTMLDivElement>(null);
   const stageLabelRef = useRef<HTMLDivElement>(null);
   const exitCounterRef = useRef<HTMLDivElement>(null);
+  const turnFadeRef = useRef<HTMLDivElement>(null);
   const hideTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -42,6 +43,9 @@ export default function GameHUD({ frameHandlerRef, stageLabel, judgement, pointe
       }
       if (exitCounterRef.current) {
         exitCounterRef.current.textContent = `EXIT ${String(info.passCount + 1).padStart(2, "0")}`;
+      }
+      if (turnFadeRef.current) {
+        turnFadeRef.current.style.opacity = String(info.turnDarkness * 0.82);
       }
     };
     return () => {
@@ -67,6 +71,7 @@ export default function GameHUD({ frameHandlerRef, stageLabel, judgement, pointe
 
   return (
     <div className="hud-root">
+      <div ref={turnFadeRef} className="hud-turn-fade" />
       <div className="hud-dot" />
       <div ref={promptRef} className="hud-prompt" />
       <div ref={exitCounterRef} className="hud-exit-counter">

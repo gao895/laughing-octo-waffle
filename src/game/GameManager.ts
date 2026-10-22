@@ -29,6 +29,8 @@ export interface HudFrameInfo {
   mistakes: number;
   maxMistakes: number;
   passCount: number;
+  /** 曲がり角演出中の画面の暗さ(0〜1)。HUD側のフェード表示に使う */
+  turnDarkness: number;
 }
 
 export interface GameManagerCallbacks {
@@ -44,6 +46,8 @@ export interface GameManagerCallbacks {
 }
 
 const JUDGEMENT_LOCK_SEC = 1.4;
+/** 曲がり角を曲がってループする演出の回頭角度 */
+const TURN_ANGLE_RAD = THREE.MathUtils.degToRad(125);
 
 /**
  * ゲーム全体のオーケストレーター。
@@ -250,20 +254,21 @@ export class GameManager {
 
     this.judgementLockTimer = JUDGEMENT_LOCK_SEC;
 
-    window.setTimeout(() => {
-      if (outcome.gameOver) {
-        // 失敗の瞬間だけジャンプスケアを使用する。演出を見せてから結果画面へ切り替える。
-        this.triggerJumpscare();
-        window.setTimeout(() => {
-          this.saveManager.addMistake();
-          this.endingManager.resolveBadEnd();
-          this.setState("GAME_OVER");
-          this.playerController.exitLock();
-          this.callbacks.onGameOver?.();
-        }, 450);
-        return;
-      }
-      if (outcome.stageCleared) {
+    if (outcome.gameOver || outcome.stageCleared) {
+      window.setTimeout(() => {
+        if (outcome.gameOver) {
+          // 失敗の瞬間だけジャンプスケアを使用する。演出を見せてから結果画面へ切り替える。
+          this.triggerJumpscare();
+          window.setTimeout(() => {
+            this.saveManager.addMistake();
+            this.endingManager.resolveBadEnd();
+            this.setState("GAME_OVER");
+            this.playerController.exitLock();
+            this.callbacks.onGameOver?.();
+          }, 450);
+          return;
+        }
+        // stageCleared
         if (result.isBossClear) this.triggerJumpscare();
         window.setTimeout(
           () => {
@@ -276,9 +281,14 @@ export class GameManager {
           },
           result.isBossClear ? 450 : 0
         );
-        return;
-      }
-      // 次のループへ
+      }, JUDGEMENT_LOCK_SEC * 1000);
+      return;
+    }
+
+    // 次のループへ：8番出口のように、曲がり角を曲がる一瞬の暗がりの裏で
+    // こっそりスタート地点へ座標を入れ替え、暗転カットなしでシームレスに見せる。
+    const turnSign = action === "PROCEED" ? 1 : -1;
+    this.playerController.startTurnTransition(JUDGEMENT_LOCK_SEC, turnSign * TURN_ANGLE_RAD, () => {
       this.placeAtSpawn();
       const runtime = this.stageManager.current!;
       this.anomalyManager.rollForLoop(
@@ -287,7 +297,7 @@ export class GameManager {
         runtime,
         this.loopManager!.isFinalLoop()
       );
-    }, JUDGEMENT_LOCK_SEC * 1000);
+    });
   }
 
   private loop = () => {
@@ -308,8 +318,12 @@ export class GameManager {
 
     if (this.state === "PLAYING") {
       const runtime = this.stageManager.current;
-      if (runtime && this.judgementLockTimer <= 0) {
-        this.playerController.update(dt, runtime.bounds);
+      if (runtime) {
+        if (this.playerController.isTransitioning) {
+          this.playerController.updateTransition(dt);
+        } else if (this.judgementLockTimer <= 0) {
+          this.playerController.update(dt, runtime.bounds);
+        }
       }
       this.lightingManager.update(dt);
       this.stageManager.update(dt, this.playerController.position);
@@ -336,6 +350,7 @@ export class GameManager {
       mistakes: this.loopManager?.mistakes ?? 0,
       maxMistakes: this.loopManager?.maxMistakes ?? 3,
       passCount: this.loopManager?.passCount ?? 0,
+      turnDarkness: this.playerController.transitionDarkness,
     });
   }
 
