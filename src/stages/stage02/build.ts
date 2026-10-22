@@ -11,8 +11,8 @@ import {
   makeChartTexture,
   makeECGTexture,
   makePatientFaceTexture,
-  buildFacedSilhouette,
-  buildHumanSilhouette,
+  buildPatientFigure,
+  buildNurseFigure,
   buildPatientBed,
   buildWheelchair,
   buildIVPole,
@@ -62,7 +62,7 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   const normalFaceTextures = [makePatientFaceTexture(1), makePatientFaceTexture(2), makePatientFaceTexture(3)];
   const sameFaceTexture = makePatientFaceTexture(13);
   const patientFaceMeshes: THREE.Mesh[] = [];
-  const PATIENT_MARGIN = 0.42; // 体半径0.22 + 余白
+  const PATIENT_MARGIN = 0.32; // 胴体半径0.16 + 余白
   const PATIENT_Z_START = 5.5;
   const PATIENT_Z_STEP = 0.6;
 
@@ -71,7 +71,7 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
     patientFaceMeshes.length = 0;
     for (let i = 0; i < count; i++) {
       const tex = normalFaceTextures[i % normalFaceTextures.length];
-      const { group: patient, faceMesh } = buildFacedSilhouette(tex);
+      const { group: patient, faceMesh } = buildPatientFigure(tex);
       const z = PATIENT_Z_START - i * PATIENT_Z_STEP;
       const hw = halfWidthAt(z);
       patient.position.set(hw - PATIENT_MARGIN, 0, z);
@@ -107,7 +107,7 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   group.add(chartPlane);
 
   const nurseWallZ = -3;
-  const nurseInWall = buildHumanSilhouette(0x1a1a1a, 0.95);
+  const nurseInWall = buildNurseFigure();
   nurseInWall.scale.set(0.9, 0.9, 0.9);
   nurseInWall.position.set(-halfWidthAt(nurseWallZ), 0, nurseWallZ);
   nurseInWall.rotation.y = Math.PI / 2;

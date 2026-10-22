@@ -179,6 +179,78 @@ export function buildFacedSilhouette(faceTex: THREE.Texture, color = 0x2c2a26): 
   return { group, faceMesh };
 }
 
+export interface HumanoidColors {
+  skin: number;
+  outfit: number;
+  legs: number;
+}
+
+/**
+ * 頭・首・胴体・腕・脚を別パーツで組んだ低ポリの人型。
+ * MeshStandardMaterialで構築するため、天井灯の光を受けて陰影が付き、
+ * 単色シルエットのCapsuleGeometryよりも「そこに人が立っている」実在感が出る。
+ */
+export function buildHumanoidFigure(colors: HumanoidColors): THREE.Group {
+  const group = new THREE.Group();
+  const skinMat = new THREE.MeshStandardMaterial({ color: colors.skin, roughness: 0.85, metalness: 0 });
+  const outfitMat = new THREE.MeshStandardMaterial({ color: colors.outfit, roughness: 0.9, metalness: 0 });
+  const legsMat = new THREE.MeshStandardMaterial({ color: colors.legs, roughness: 0.9, metalness: 0 });
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.1, 14, 12), skinMat);
+  head.position.y = 1.62;
+
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, 0.08, 8), skinMat);
+  neck.position.y = 1.53;
+
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.14, 0.5, 10), outfitMat);
+  torso.position.y = 1.25;
+
+  const hips = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.13, 0.18, 10), outfitMat);
+  hips.position.y = 0.91;
+
+  const legGeo = new THREE.CylinderGeometry(0.055, 0.045, 0.82, 8);
+  const legL = new THREE.Mesh(legGeo, legsMat);
+  legL.position.set(-0.08, 0.41, 0);
+  const legR = new THREE.Mesh(legGeo, legsMat);
+  legR.position.set(0.08, 0.41, 0);
+
+  const armGeo = new THREE.CylinderGeometry(0.035, 0.04, 0.52, 8);
+  const armL = new THREE.Mesh(armGeo, skinMat);
+  armL.position.set(-0.2, 1.1, 0);
+  armL.rotation.z = 0.1;
+  const armR = new THREE.Mesh(armGeo, skinMat);
+  armR.position.set(0.2, 1.1, 0);
+  armR.rotation.z = -0.1;
+
+  group.add(head, neck, torso, hips, legL, legR, armL, armR);
+  group.traverse((obj) => {
+    const mesh = obj as THREE.Mesh;
+    if (mesh.isMesh) {
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+    }
+  });
+  return group;
+}
+
+const PATIENT_COLORS: HumanoidColors = { skin: 0xc9b9a3, outfit: 0xaab0ac, legs: 0x8e8a84 };
+const NURSE_COLORS: HumanoidColors = { skin: 0xc2b3a0, outfit: 0xd8dcd6, legs: 0x9aa0a6 };
+
+/** 患者（STAGE02）。病衣の低ポリ人型に、個体差を出す顔テクスチャを前面に貼る */
+export function buildPatientFigure(faceTex: THREE.Texture): { group: THREE.Group; faceMesh: THREE.Mesh } {
+  const group = buildHumanoidFigure(PATIENT_COLORS);
+  const faceMat = new THREE.MeshBasicMaterial({ map: faceTex, toneMapped: false, transparent: true });
+  const faceMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 0.15), faceMat);
+  faceMesh.position.set(0, 1.62, 0.1);
+  group.add(faceMesh);
+  return { group, faceMesh };
+}
+
+/** ナース（STAGE02「壁の中のナース」用）。白衣寄りの配色で、あえて顔は付けない */
+export function buildNurseFigure(): THREE.Group {
+  return buildHumanoidFigure(NURSE_COLORS);
+}
+
 export function buildUmbrella(): THREE.Group {
   const group = new THREE.Group();
   const poleMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.6 });
