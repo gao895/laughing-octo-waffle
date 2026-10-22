@@ -18,6 +18,7 @@ import {
   buildVendingMachine,
   buildRoomServiceCart,
   buildHotelGuestFigure,
+  buildHotelDoorPanel,
 } from "../../three/EnvironmentManager";
 import { buildCorridorShell, addCorridorLights, buildDoorAndSign, scatterWallDecor } from "../shared/corridorBuilder";
 
@@ -155,11 +156,11 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
   const ROOM_NUMBER_Z = -10.5;
   const roomNumTexNormal = makeRoomNumberTexture("664", false);
   const roomNumTexAnomaly = makeRoomNumberTexture("666", true);
-  const roomNumMat = new THREE.MeshBasicMaterial({ map: roomNumTexNormal, toneMapped: false });
-  const roomNumPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.2), roomNumMat);
-  roomNumPlane.position.set(halfWidthAt(ROOM_NUMBER_Z) - 0.05, 1.25, ROOM_NUMBER_Z);
-  roomNumPlane.rotation.y = -Math.PI / 2;
-  group.add(roomNumPlane);
+  const roomNumDoor = buildHotelDoorPanel(roomNumTexNormal);
+  const roomNumMat = roomNumDoor.plateMat;
+  roomNumDoor.group.position.set(halfWidthAt(ROOM_NUMBER_Z) - 0.03, 0.98, ROOM_NUMBER_Z);
+  roomNumDoor.group.rotation.y = -Math.PI / 2;
+  group.add(roomNumDoor.group);
 
   // --- ボスの人影（本館出口手前, z=-14.8） ---
   const BOSS_Z = DOOR_Z + 1.6;
@@ -168,27 +169,39 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
   bossFigure.visible = false;
   group.add(bossFigure);
 
-  // --- 廊下沿いの客室ドア番号・掲示物（8番出口のように、毎回同じはずのものを並べて密度を作る） ---
+  // --- 廊下沿いの客室ドア（8番出口のように、毎回同じはずのものを並べて密度を作る）。
+  // 番号だけのプレートではなく、実際の扉の形（枠+パネル+ノブ+覗き穴）を持たせる。
   const roomDoorTextures = ["601", "602", "603", "605"].map((n) => makeRoomNumberTexture(n, false));
-  scatterWallDecor(group, halfWidthAt, roomDoorTextures, {
-    zFrom: 7,
-    zTo: -16,
-    step: 2.2,
-    width: 0.28,
-    height: 0.2,
-    y: 1.25,
-    skipZRanges: [
-      [5.4, 6.6],
-      [3.4, 4.6],
-      [0.9, 2.1],
-      [-1.1, 0.1],
-      [-3.6, -2.4],
-      [-6.1, -4.9],
-      [-8.6, -7.4],
-      [-11.1, -9.9],
-      [-15.6, -14],
-    ],
-  });
+  const roomDoorSkipZRanges: [number, number][] = [
+    [5.4, 6.6],
+    [3.4, 4.6],
+    [0.9, 2.1],
+    [-1.1, 0.1],
+    [-3.6, -2.4],
+    [-6.1, -4.9],
+    [-8.6, -7.4],
+    [-11.1, -9.9],
+    [-15.6, -14],
+  ];
+  let doorSide: 1 | -1 = 1;
+  let doorTexIndex = 0;
+  for (let z = 7; z >= -16; z -= 2.2) {
+    const skipped = roomDoorSkipZRanges.some(([lo, hi]) => z >= lo && z <= hi);
+    if (!skipped) {
+      const hw = halfWidthAt(z);
+      const doorHandle = buildHotelDoorPanel(roomDoorTextures[doorTexIndex % roomDoorTextures.length]);
+      if (doorSide === 1) {
+        doorHandle.group.position.set(hw - 0.03, 0.98, z);
+        doorHandle.group.rotation.y = -Math.PI / 2;
+      } else {
+        doorHandle.group.position.set(-(hw - 0.03), 0.98, z);
+        doorHandle.group.rotation.y = Math.PI / 2;
+      }
+      group.add(doorHandle.group);
+      doorTexIndex += 1;
+    }
+    doorSide = doorSide === 1 ? -1 : 1;
+  }
   const noticeTextures = [0, 1, 2, 3].map((v) => makeHotelNoticeTexture(v));
   scatterWallDecor(group, halfWidthAt, noticeTextures, {
     zFrom: 7.6,

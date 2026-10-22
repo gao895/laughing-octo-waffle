@@ -1457,3 +1457,50 @@ const HOTEL_GUEST_COLORS: HumanoidColors = { skin: 0xc9b9a3, outfit: 0x2a2a30, l
 export function buildHotelGuestFigure(): THREE.Group {
   return buildHumanoidFigure(HOTEL_GUEST_COLORS);
 }
+
+export interface HotelDoorHandle {
+  group: THREE.Group;
+  plateMat: THREE.MeshBasicMaterial;
+}
+
+/**
+ * 客室ドア一式（扉本体+枠+ドアノブ+覗き穴+部屋番号プレート）。
+ * 単なる番号プレートではなく実際の扉の形を持たせることで、
+ * 廊下らしいリアリティを出す。
+ */
+export function buildHotelDoorPanel(numberTex: THREE.Texture): HotelDoorHandle {
+  const group = new THREE.Group();
+
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x2a1c14, roughness: 0.6 });
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(0.64, 1.96, 0.05), frameMat);
+  group.add(frame);
+
+  const doorMat = new THREE.MeshStandardMaterial({ color: 0x4a2e1c, roughness: 0.55 });
+  const door = new THREE.Mesh(new THREE.BoxGeometry(0.56, 1.86, 0.03), doorMat);
+  door.position.z = 0.012;
+  group.add(door);
+
+  const panelMat = new THREE.MeshStandardMaterial({ color: 0x3a2516, roughness: 0.6 });
+  const panelTop = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.55, 0.015), panelMat);
+  panelTop.position.set(0, 0.55, 0.03);
+  const panelBottom = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.75, 0.015), panelMat);
+  panelBottom.position.set(0, -0.35, 0.03);
+  group.add(panelTop, panelBottom);
+
+  const knobMat = new THREE.MeshStandardMaterial({ color: 0xc9a84a, roughness: 0.3, metalness: 0.8 });
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), knobMat);
+  knob.position.set(0.22, -0.05, 0.04);
+  group.add(knob);
+
+  const peepholeMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.2, metalness: 0.6 });
+  const peephole = new THREE.Mesh(new THREE.CircleGeometry(0.012, 8), peepholeMat);
+  peephole.position.set(0, 0.95, 0.03);
+  group.add(peephole);
+
+  const plateMat = new THREE.MeshBasicMaterial({ map: numberTex, toneMapped: false });
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.12), plateMat);
+  plate.position.set(0, 0.72, 0.03);
+  group.add(plate);
+
+  return { group, plateMat };
+}
