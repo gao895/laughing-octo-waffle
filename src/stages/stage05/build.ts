@@ -1,0 +1,332 @@
+import * as THREE from "three";
+import type { StageRuntime } from "../../game/StageManager";
+import { LightingManager, type CorridorLight } from "../../three/LightingManager";
+import type { AudioManager } from "../../game/AudioManager";
+import {
+  makeHotelWallpaperTexture,
+  makeHotelCarpetTexture,
+  makeCeilingTexture,
+  makeSignTexture,
+  makeDndTexture,
+  makePaintingTexture,
+  makeVendingScreenTexture,
+  makeHotelNoticeTexture,
+  makeArrowSignTexture,
+  makeRoomNumberTexture,
+  buildElevatorDoors,
+  buildLuggageCart,
+  buildVendingMachine,
+  buildRoomServiceCart,
+  buildHotelGuestFigure,
+} from "../../three/EnvironmentManager";
+import { buildCorridorShell, addCorridorLights, buildDoorAndSign, scatterWallDecor } from "../shared/corridorBuilder";
+
+const Z_MIN = -17;
+const Z_MAX = 11;
+const SPAWN_Z = 8;
+const DOOR_Z = -16.4;
+// 8番出口のような「一本道」を再現するため、廊下の幅は一定にする
+const HALF_WIDTH = 1.4;
+
+function halfWidthAt(_z: number): number {
+  return HALF_WIDTH;
+}
+
+export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audio: AudioManager): StageRuntime {
+  // --- マテリアル/テクスチャ ---
+  const wallTex = makeHotelWallpaperTexture();
+  wallTex.repeat.set(1, 2);
+  const floorTex = makeHotelCarpetTexture();
+  const ceilTex = makeCeilingTexture();
+
+  const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.85, metalness: 0.05 });
+  const floorMat = new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.95, metalness: 0 });
+  const ceilMat = new THREE.MeshStandardMaterial({ map: ceilTex, roughness: 1 });
+
+  // --- 通路本体 ---
+  const { group, bounds } = buildCorridorShell({ zMin: Z_MIN, zMax: Z_MAX, halfWidthAt, wallMat, floorMat, ceilMat });
+  group.name = "stage05";
+
+  // --- 壁の燭台灯 ---
+  const lightZs = [6, 3, 0, -3, -6.5, -10, -14];
+  const lightEntries: CorridorLight[] = addCorridorLights(scene, lighting, lightZs, 2.3, 5.5, 0xffcf9e);
+  const flickerLight = lightEntries[3]; // z = -3 のライト
+
+  // --- 本館出口の扉と看板 ---
+  const signTexNormal = makeSignTexture("EXIT", "#ff2a2a");
+  const { doorFrame, signPlane } = buildDoorAndSign(DOOR_Z, signTexNormal, 0x2a1c16);
+  group.add(doorFrame, signPlane);
+  const finalRoomPlateTex = makeRoomNumberTexture("666", false);
+  const finalRoomPlate = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.3, 0.22),
+    new THREE.MeshBasicMaterial({ map: finalRoomPlateTex, toneMapped: false })
+  );
+  finalRoomPlate.position.set(0.5, 1.3, DOOR_Z - 0.28);
+  group.add(finalRoomPlate);
+
+  // --- エレベーター（z=6, 左壁） ---
+  const ELEVATOR_Z = 6;
+  const elevatorIndicatorNormal = makeRoomNumberTexture("1F", false);
+  const elevatorIndicatorAnomaly = makeRoomNumberTexture("B6", true);
+  const elevator = buildElevatorDoors(elevatorIndicatorNormal);
+  elevator.group.position.set(-(halfWidthAt(ELEVATOR_Z) - 0.04), 0, ELEVATOR_Z);
+  elevator.group.rotation.y = Math.PI / 2;
+  group.add(elevator.group);
+
+  // --- 荷物カート（z=4, 右壁） ---
+  const LUGGAGE_Z = 4;
+  const luggageSlot = new THREE.Group();
+  luggageSlot.position.set(halfWidthAt(LUGGAGE_Z) - 0.32, 0, LUGGAGE_Z);
+  luggageSlot.rotation.y = -Math.PI / 2;
+  group.add(luggageSlot);
+  function rebuildLuggage(extra: boolean) {
+    luggageSlot.clear();
+    luggageSlot.add(buildLuggageCart(extra));
+  }
+  rebuildLuggage(false);
+
+  // --- 絵画（z=1.5, 左壁） ---
+  const PAINTING_Z = 1.5;
+  const paintingTexNormal = makePaintingTexture(0);
+  const paintingTexAnomaly = makePaintingTexture(1);
+  const paintingMat = new THREE.MeshBasicMaterial({ map: paintingTexNormal, toneMapped: false });
+  const paintingPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.52), paintingMat);
+  paintingPlane.position.set(-(halfWidthAt(PAINTING_Z) - 0.05), 1.4, PAINTING_Z);
+  paintingPlane.rotation.y = Math.PI / 2;
+  group.add(paintingPlane);
+
+  // --- DNDサインの下がった客室ドア（z=-0.5, 右壁） ---
+  const DND_Z = -0.5;
+  const dndTexNormal = makeDndTexture(false);
+  const dndTexAnomaly = makeDndTexture(true);
+  const dndDoorFrame = new THREE.Mesh(
+    new THREE.BoxGeometry(0.04, 1.8, 0.75),
+    new THREE.MeshStandardMaterial({ color: 0x3a2a1c, roughness: 0.6 })
+  );
+  dndDoorFrame.position.set(halfWidthAt(DND_Z) - 0.02, 0.9, DND_Z);
+  group.add(dndDoorFrame);
+  const dndMat = new THREE.MeshBasicMaterial({ map: dndTexNormal, toneMapped: false });
+  const dndPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.26), dndMat);
+  dndPlane.position.set(halfWidthAt(DND_Z) - 0.05, 1.3, DND_Z);
+  dndPlane.rotation.y = -Math.PI / 2;
+  group.add(dndPlane);
+
+  // --- 自動販売機（z=-3, 左壁） ---
+  const VENDING_Z = -3;
+  const vendingTexNormal = makeVendingScreenTexture(false);
+  const vendingTexAnomaly = makeVendingScreenTexture(true);
+  const vending = buildVendingMachine(vendingTexNormal);
+  vending.group.position.set(-(halfWidthAt(VENDING_Z) - 0.22), 0, VENDING_Z);
+  vending.group.rotation.y = Math.PI / 2;
+  group.add(vending.group);
+
+  // --- ルームサービスカート（z=-5.5, 右壁） ---
+  const CART_Z = -5.5;
+  const cartSlot = new THREE.Group();
+  const CART_BASE_X = halfWidthAt(CART_Z) - 0.35;
+  const CART_MOVED_X = halfWidthAt(CART_Z) - 0.7;
+  cartSlot.position.set(CART_BASE_X, 0, CART_Z);
+  cartSlot.add(buildRoomServiceCart());
+  group.add(cartSlot);
+
+  // --- 鏡（z=-8, 左壁） ---
+  const MIRROR_Z = -8;
+  const mirrorHalfWidth = halfWidthAt(MIRROR_Z);
+  const mirrorFrame = new THREE.Mesh(
+    new THREE.BoxGeometry(0.7, 1.1, 0.04),
+    new THREE.MeshStandardMaterial({ color: 0x8a7a4a, roughness: 0.4, metalness: 0.6 })
+  );
+  const mirrorGlass = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.58, 0.98),
+    new THREE.MeshStandardMaterial({ color: 0x1a2230, roughness: 0.05, metalness: 0.9 })
+  );
+  mirrorGlass.position.z = 0.03;
+  mirrorFrame.add(mirrorGlass);
+  mirrorFrame.position.set(-(mirrorHalfWidth - 0.06), 1.3, MIRROR_Z);
+  mirrorFrame.rotation.y = Math.PI / 2;
+  group.add(mirrorFrame);
+  const mirrorFigure = buildHotelGuestFigure();
+  mirrorFigure.scale.set(0.5, 0.5, 0.02);
+  mirrorFigure.position.set(-(mirrorHalfWidth - 0.1), 0, MIRROR_Z);
+  mirrorFigure.visible = false;
+  group.add(mirrorFigure);
+
+  // --- 部屋番号プレート（z=-10.5, 右壁） ---
+  const ROOM_NUMBER_Z = -10.5;
+  const roomNumTexNormal = makeRoomNumberTexture("664", false);
+  const roomNumTexAnomaly = makeRoomNumberTexture("666", true);
+  const roomNumMat = new THREE.MeshBasicMaterial({ map: roomNumTexNormal, toneMapped: false });
+  const roomNumPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.2), roomNumMat);
+  roomNumPlane.position.set(halfWidthAt(ROOM_NUMBER_Z) - 0.05, 1.25, ROOM_NUMBER_Z);
+  roomNumPlane.rotation.y = -Math.PI / 2;
+  group.add(roomNumPlane);
+
+  // --- ボスの人影（本館出口手前, z=-14.8） ---
+  const BOSS_Z = DOOR_Z + 1.6;
+  const bossFigure = buildHotelGuestFigure();
+  bossFigure.position.set(0, 0, BOSS_Z);
+  bossFigure.visible = false;
+  group.add(bossFigure);
+
+  // --- 廊下沿いの客室ドア番号・掲示物（8番出口のように、毎回同じはずのものを並べて密度を作る） ---
+  const roomDoorTextures = ["601", "602", "603", "605"].map((n) => makeRoomNumberTexture(n, false));
+  scatterWallDecor(group, halfWidthAt, roomDoorTextures, {
+    zFrom: 7,
+    zTo: -16,
+    step: 2.2,
+    width: 0.28,
+    height: 0.2,
+    y: 1.25,
+    skipZRanges: [
+      [5.4, 6.6],
+      [3.4, 4.6],
+      [0.9, 2.1],
+      [-1.1, 0.1],
+      [-3.6, -2.4],
+      [-6.1, -4.9],
+      [-8.6, -7.4],
+      [-11.1, -9.9],
+      [-15.6, -14],
+    ],
+  });
+  const noticeTextures = [0, 1, 2, 3].map((v) => makeHotelNoticeTexture(v));
+  scatterWallDecor(group, halfWidthAt, noticeTextures, {
+    zFrom: 7.6,
+    zTo: -15.8,
+    step: 3.1,
+    width: 0.4,
+    height: 0.55,
+    y: 2.0,
+  });
+  const arrowTextures = [makeArrowSignTexture("right"), makeArrowSignTexture("left")];
+  scatterWallDecor(group, halfWidthAt, arrowTextures, {
+    zFrom: 8.3,
+    zTo: -16.2,
+    step: 4,
+    width: 0.3,
+    height: 0.15,
+    y: 2.3,
+  });
+
+  // --- 状態管理 ---
+  let heartbeatTimer = 0;
+  let heartbeatActive = false;
+  let electricHumTimer = 0;
+  let vendingGlowBase = vending.glowLight.intensity;
+
+  const runtime: StageRuntime = {
+    group,
+    bounds,
+    spawnPosition: new THREE.Vector3(0, 0, SPAWN_Z),
+    spawnYaw: 0,
+    doorInteractPoint: new THREE.Vector3(0, 0, DOOR_Z + 1.4),
+    startGateInteractPoint: new THREE.Vector3(0, 0, SPAWN_Z + 2.3),
+    interactRadius: 1.7,
+
+    applyAnomaly(id: string | null) {
+      roomNumMat.map = roomNumTexNormal;
+      roomNumMat.needsUpdate = true;
+      dndMat.map = dndTexNormal;
+      dndMat.needsUpdate = true;
+      elevator.indicatorMat.map = elevatorIndicatorNormal;
+      elevator.indicatorMat.needsUpdate = true;
+      lighting.setFlicker(flickerLight, false);
+      rebuildLuggage(false);
+      paintingMat.map = paintingTexNormal;
+      paintingMat.needsUpdate = true;
+      vending.screenMat.map = vendingTexNormal;
+      vending.screenMat.needsUpdate = true;
+      vending.glowLight.intensity = vendingGlowBase;
+      cartSlot.position.x = CART_BASE_X;
+      mirrorFigure.visible = false;
+      bossFigure.visible = false;
+      heartbeatActive = false;
+      heartbeatTimer = 0;
+
+      switch (id) {
+        case "room_number_666":
+          roomNumMat.map = roomNumTexAnomaly;
+          roomNumMat.needsUpdate = true;
+          break;
+        case "dnd_sign_flip":
+          dndMat.map = dndTexAnomaly;
+          dndMat.needsUpdate = true;
+          break;
+        case "elevator_light":
+          elevator.indicatorMat.map = elevatorIndicatorAnomaly;
+          elevator.indicatorMat.needsUpdate = true;
+          lighting.setFlicker(flickerLight, true);
+          break;
+        case "luggage_extra":
+          rebuildLuggage(true);
+          break;
+        case "painting_eyes":
+          paintingMat.map = paintingTexAnomaly;
+          paintingMat.needsUpdate = true;
+          break;
+        case "vending_message":
+          vending.screenMat.map = vendingTexAnomaly;
+          vending.screenMat.needsUpdate = true;
+          vending.glowLight.intensity = vendingGlowBase * 1.8;
+          break;
+        case "cart_moved":
+          cartSlot.position.x = CART_MOVED_X;
+          break;
+        case "phone_ring":
+          audio.playNurseCall();
+          break;
+        case "mirror_wrong_room":
+          mirrorFigure.visible = true;
+          audio.playWhisper();
+          break;
+        case "key_double":
+          bossFigure.visible = true;
+          heartbeatActive = true;
+          break;
+        default:
+          break;
+      }
+    },
+
+    update(dt: number) {
+      if (heartbeatActive) {
+        heartbeatTimer -= dt;
+        if (heartbeatTimer <= 0) {
+          const interval = audio.playHeartbeat(85) ?? 0.75;
+          heartbeatTimer = interval;
+        }
+      }
+
+      if (flickerLight.flickering) {
+        electricHumTimer -= dt;
+        if (electricHumTimer <= 0) {
+          electricHumTimer = 1.5 + Math.random() * 2;
+          audio.playElectricHum();
+        }
+      }
+    },
+
+    dispose() {
+      wallTex.dispose();
+      floorTex.dispose();
+      ceilTex.dispose();
+      signTexNormal.dispose();
+      finalRoomPlateTex.dispose();
+      elevatorIndicatorNormal.dispose();
+      elevatorIndicatorAnomaly.dispose();
+      paintingTexNormal.dispose();
+      paintingTexAnomaly.dispose();
+      dndTexNormal.dispose();
+      dndTexAnomaly.dispose();
+      vendingTexNormal.dispose();
+      vendingTexAnomaly.dispose();
+      roomNumTexNormal.dispose();
+      roomNumTexAnomaly.dispose();
+      for (const t of roomDoorTextures) t.dispose();
+      for (const t of noticeTextures) t.dispose();
+      for (const t of arrowTextures) t.dispose();
+    },
+  };
+
+  return runtime;
+}

@@ -1186,3 +1186,274 @@ const SHRINE_FIGURE_COLORS: HumanoidColors = { skin: 0x2a2622, outfit: 0x1c1a18,
 export function buildFacelessFigure(): THREE.Group {
   return buildHumanoidFigure(SHRINE_FIGURE_COLORS);
 }
+
+// ============================================================
+// STAGE05「ホテル666」用テクスチャ・小道具
+// ============================================================
+
+export function makeHotelWallpaperTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(256, 256);
+  noiseFill(ctx, 256, 256, "#3a1c22", 8);
+  ctx.strokeStyle = "rgba(90,40,30,0.3)";
+  ctx.lineWidth = 2;
+  for (let x = 0; x <= 256; x += 32) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 256);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "rgba(120,60,40,0.12)";
+  for (let i = 0; i < 20; i++) {
+    ctx.beginPath();
+    ctx.ellipse(Math.random() * 256, Math.random() * 256, 10 + Math.random() * 10, 16 + Math.random() * 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+export function makeHotelCarpetTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(256, 256);
+  noiseFill(ctx, 256, 256, "#5a1018", 10);
+  ctx.fillStyle = "rgba(20,5,8,0.4)";
+  for (let y = 0; y < 256; y += 48) {
+    for (let x = 0; x < 256; x += 48) {
+      ctx.beginPath();
+      ctx.arc(x + 24, y + 24, 14, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(4, 14);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 「起こさないでください」の札。anomalyでメッセージが不穏なものに変わる */
+export function makeDndTexture(anomaly: boolean): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(96, 160);
+  ctx.fillStyle = "#c7b57a";
+  ctx.fillRect(4, 4, 88, 152);
+  ctx.strokeStyle = "#2a2015";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(4, 4, 88, 152);
+  ctx.fillStyle = "#2a2015";
+  ctx.font = "bold 13px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("DO NOT", 48, 60);
+  ctx.fillText("DISTURB", 48, 78);
+  if (anomaly) {
+    ctx.fillStyle = "#7a1010";
+    ctx.font = "bold 16px sans-serif";
+    ctx.fillText("出てこない", 48, 110);
+    ctx.fillText("でください", 48, 130);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 廊下の絵画。variantで視線の向きを変える */
+export function makePaintingTexture(variant: 0 | 1): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 160);
+  ctx.fillStyle = "#1c1410";
+  ctx.fillRect(0, 0, 128, 160);
+  ctx.fillStyle = "#4a3a2c";
+  ctx.beginPath();
+  ctx.ellipse(64, 70, 30, 38, 0, 0, Math.PI * 2);
+  ctx.fill();
+  const eyeOffset = variant === 1 ? 10 : 0;
+  ctx.fillStyle = "#0a0806";
+  ctx.beginPath();
+  ctx.ellipse(54 + eyeOffset, 64, 4, 3, 0, 0, Math.PI * 2);
+  ctx.ellipse(74 + eyeOffset, 64, 4, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#caa86a";
+  ctx.lineWidth = 6;
+  ctx.strokeRect(6, 6, 116, 148);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 自動販売機のパネル。anomalyで商品名が不穏なものに変わる */
+export function makeVendingScreenTexture(anomaly: boolean): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(96, 128);
+  ctx.fillStyle = "#0a0a12";
+  ctx.fillRect(0, 0, 96, 128);
+  const items = anomaly
+    ? ["????", "でてこい", "666", "のまないで"]
+    : ["COLA", "WATER", "TEA", "COFFEE"];
+  ctx.fillStyle = anomaly ? "#ff3a3a" : "#8adfff";
+  ctx.font = "10px monospace";
+  ctx.textAlign = "left";
+  items.forEach((label, i) => {
+    ctx.fillText(label, 6, 24 + i * 26);
+    ctx.strokeStyle = anomaly ? "#ff3a3a" : "#8adfff";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(4, 10 + i * 26, 86, 18);
+  });
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** ホテル廊下に繰り返し貼る案内掲示 */
+export function makeHotelNoticeTexture(variant: number): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 176);
+  ctx.fillStyle = "#2a1c1a";
+  ctx.fillRect(0, 0, 128, 176);
+  ctx.strokeStyle = "#8a6a4a";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(2, 2, 124, 172);
+
+  const items: [string, string][] = [
+    ["非常口", "避難経路は矢印方向です"],
+    ["禁煙", "館内は全室禁煙です"],
+    ["清掃時間", "毎朝9時より清掃を行います"],
+    ["フロント", "御用の際は内線0番へ"],
+  ];
+  const [title, body] = items[variant % items.length];
+
+  ctx.fillStyle = "#e8d8b0";
+  ctx.font = "bold 18px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(title, 64, 32);
+
+  ctx.strokeStyle = "#caa04a";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(24, 46);
+  ctx.lineTo(104, 46);
+  ctx.stroke();
+
+  ctx.fillStyle = "#cbb894";
+  ctx.font = "10px sans-serif";
+  let line = "";
+  let y = 70;
+  for (const ch of body) {
+    line += ch;
+    if (line.length >= 9) {
+      ctx.fillText(line, 64, y);
+      line = "";
+      y += 15;
+    }
+  }
+  if (line) ctx.fillText(line, 64, y);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+export interface ElevatorHandle {
+  group: THREE.Group;
+  indicatorMat: THREE.MeshBasicMaterial;
+}
+
+/** エレベーター扉と階数表示パネル */
+export function buildElevatorDoors(indicatorTex: THREE.Texture): ElevatorHandle {
+  const group = new THREE.Group();
+  const doorMat = new THREE.MeshStandardMaterial({ color: 0x8a7a4a, roughness: 0.3, metalness: 0.8 });
+  const doorL = new THREE.Mesh(new THREE.BoxGeometry(0.45, 1.9, 0.04), doorMat);
+  doorL.position.set(-0.23, 0.95, 0);
+  const doorR = new THREE.Mesh(new THREE.BoxGeometry(0.45, 1.9, 0.04), doorMat);
+  doorR.position.set(0.23, 0.95, 0);
+  const frame = new THREE.Mesh(
+    new THREE.BoxGeometry(1.0, 2.0, 0.06),
+    new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.5 })
+  );
+  frame.position.z = -0.02;
+  const indicatorMat = new THREE.MeshBasicMaterial({ map: indicatorTex, toneMapped: false });
+  const indicator = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.12), indicatorMat);
+  indicator.position.set(0, 2.05, 0.02);
+  group.add(frame, doorL, doorR, indicator);
+  return { group, indicatorMat };
+}
+
+/** スーツケース付きのルームサービス/荷物カート。extraで荷物が増える */
+export function buildLuggageCart(extra: boolean): THREE.Group {
+  const group = new THREE.Group();
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x4a4038, roughness: 0.5, metalness: 0.5 });
+  const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.03, 0.35), frameMat);
+  shelf.position.y = 0.45;
+  const legGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.45, 6);
+  const legOffsets: [number, number][] = [
+    [-0.22, -0.15],
+    [0.22, -0.15],
+    [-0.22, 0.15],
+    [0.22, 0.15],
+  ];
+  for (const [x, z] of legOffsets) {
+    const leg = new THREE.Mesh(legGeo, frameMat);
+    leg.position.set(x, 0.22, z);
+    group.add(leg);
+  }
+  const caseMat = new THREE.MeshStandardMaterial({ color: 0x2a3a4a, roughness: 0.6 });
+  const case1 = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.2, 0.2), caseMat);
+  case1.position.set(-0.05, 0.57, 0);
+  group.add(shelf, case1);
+  if (extra) {
+    const case2Mat = new THREE.MeshStandardMaterial({ color: 0x5a2a2a, roughness: 0.6 });
+    const case2 = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 0.18), case2Mat);
+    case2.position.set(0.14, 0.53, 0.02);
+    group.add(case2);
+  }
+  return group;
+}
+
+export interface VendingMachineHandle {
+  group: THREE.Group;
+  screenMat: THREE.MeshBasicMaterial;
+  glowLight: THREE.PointLight;
+}
+
+export function buildVendingMachine(screenTex: THREE.Texture): VendingMachineHandle {
+  const group = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0xc8c8c8, roughness: 0.4, metalness: 0.3 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.5, 0.4), bodyMat);
+  body.position.y = 0.75;
+  const screenMat = new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false });
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.55), screenMat);
+  screen.position.set(0, 0.95, 0.21);
+  const glowLight = new THREE.PointLight(0x8adfff, 1.2, 1.5, 2);
+  glowLight.position.set(0, 0.95, 0.3);
+  group.add(body, screen, glowLight);
+  return { group, screenMat, glowLight };
+}
+
+/** ルームサービスカート */
+export function buildRoomServiceCart(): THREE.Group {
+  const group = new THREE.Group();
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0xaaa9a0, roughness: 0.4, metalness: 0.6 });
+  const top = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.03, 0.3), frameMat);
+  top.position.y = 0.5;
+  const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.03, 0.3), frameMat);
+  shelf.position.y = 0.25;
+  const legGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.5, 6);
+  for (const [x, z] of [
+    [-0.22, -0.12],
+    [0.22, -0.12],
+    [-0.22, 0.12],
+    [0.22, 0.12],
+  ] as [number, number][]) {
+    const leg = new THREE.Mesh(legGeo, frameMat);
+    leg.position.set(x, 0.25, z);
+    group.add(leg);
+  }
+  const domeMat = new THREE.MeshStandardMaterial({ color: 0xd8d8d0, roughness: 0.3, metalness: 0.7 });
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), domeMat);
+  dome.position.set(-0.08, 0.5, 0);
+  group.add(top, shelf, dome);
+  return group;
+}
+
+const HOTEL_GUEST_COLORS: HumanoidColors = { skin: 0xc9b9a3, outfit: 0x2a2a30, legs: 0x1c1c20 };
+
+/** 宿泊客風の人影（STAGE05ボス用） */
+export function buildHotelGuestFigure(): THREE.Group {
+  return buildHumanoidFigure(HOTEL_GUEST_COLORS);
+}
