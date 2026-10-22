@@ -72,6 +72,7 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
   const TORII_Z = 14.25;
   const toriiSlot = new THREE.Group();
   toriiSlot.position.z = TORII_Z;
+  toriiSlot.scale.setScalar(1.25);
   group.add(toriiSlot);
   function rebuildEntranceTorii(tilted: boolean) {
     toriiSlot.clear();
@@ -85,8 +86,10 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
   const LANTERN_Z = 9;
   const lanternL: StoneLanternHandle = buildStoneLantern();
   lanternL.group.position.set(-(halfWidthAt(LANTERN_Z) - 0.3), 0, LANTERN_Z);
+  lanternL.group.scale.setScalar(1.25);
   const lanternR: StoneLanternHandle = buildStoneLantern();
   lanternR.group.position.set(halfWidthAt(LANTERN_Z) - 0.3, 0, LANTERN_Z);
+  lanternR.group.scale.setScalar(1.25);
   group.add(lanternL.group, lanternR.group);
 
   // --- 絵馬掛け（z=6, 右壁） ---
@@ -94,14 +97,14 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
   const emaTexNormal = makeEmaTexture("");
   const emaTexAnomaly = makeEmaTexture("かえりたい");
   const emaMat = new THREE.MeshBasicMaterial({ map: emaTexNormal, toneMapped: false });
-  const emaPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.37), emaMat);
+  const emaPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.46), emaMat);
   emaPlane.position.set(halfWidthAt(EMA_Z) - 0.1, 1.2, EMA_Z);
   emaPlane.rotation.y = -Math.PI / 2;
   group.add(emaPlane);
   // 周囲に反応しない絵馬を数枚添えて密度を作る
   const emaDecorTex = makeEmaTexture("");
   for (const dz of [-0.28, 0.28]) {
-    const deco = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.32), new THREE.MeshBasicMaterial({ map: emaDecorTex, toneMapped: false }));
+    const deco = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.4), new THREE.MeshBasicMaterial({ map: emaDecorTex, toneMapped: false }));
     deco.position.set(halfWidthAt(EMA_Z + dz) - 0.1, 1.15, EMA_Z + dz);
     deco.rotation.y = -Math.PI / 2;
     group.add(deco);
@@ -112,15 +115,18 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
   const komainuL: KomainuHandle = buildKomainu(false);
   komainuL.group.position.set(-(halfWidthAt(KOMAINU_Z) - 0.35), 0, KOMAINU_Z);
   komainuL.group.rotation.y = Math.PI / 2;
+  komainuL.group.scale.setScalar(1.25);
   const komainuR: KomainuHandle = buildKomainu(true);
   komainuR.group.position.set(halfWidthAt(KOMAINU_Z) - 0.35, 0, KOMAINU_Z);
   komainuR.group.rotation.y = -Math.PI / 2;
+  komainuR.group.scale.setScalar(1.25);
   group.add(komainuL.group, komainuR.group);
 
   // --- 手水舎（z=-1.5, 左壁） ---
   const CHOZUYA_Z = -1.5;
   const chozuya = buildChozuya();
   chozuya.group.position.set(-(halfWidthAt(CHOZUYA_Z) - 0.55), 0, CHOZUYA_Z);
+  chozuya.group.scale.setScalar(1.25);
   group.add(chozuya.group);
   const waterColorNormal = chozuya.waterMat.color.clone();
   const waterColorAnomaly = new THREE.Color(0x5a1414);
@@ -129,6 +135,7 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
   const SHIMENAWA_Z = -6;
   const shimenawaSlot = new THREE.Group();
   shimenawaSlot.position.set(0, 2.1, SHIMENAWA_Z);
+  shimenawaSlot.scale.setScalar(1.25);
   group.add(shimenawaSlot);
   function rebuildShimenawa(count: number) {
     shimenawaSlot.clear();
@@ -141,6 +148,7 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
   const stepsSlot = new THREE.Group();
   stepsSlot.position.set(halfWidthAt(STEPS_Z) - 0.3, 0, STEPS_Z + 0.4);
   stepsSlot.rotation.y = -Math.PI / 2;
+  stepsSlot.scale.setScalar(1.25);
   group.add(stepsSlot);
   function rebuildSteps(count: number) {
     stepsSlot.clear();
@@ -166,12 +174,14 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
   bellBody.position.y = 1.65;
   bellGroup.add(bellRopePivot, bellBody);
   bellGroup.position.set(0, 0, BELL_Z);
+  bellGroup.scale.setScalar(1.25);
   group.add(bellGroup);
 
   // --- 最終鳥居とボスの顔のない人影（本殿手前, z=-14.8） ---
   const FINAL_TORII_Z = DOOR_Z + 2.4;
   const finalTorii = buildToriiGate(2.4, 2.6);
   finalTorii.position.set(0, 0, FINAL_TORII_Z);
+  finalTorii.scale.setScalar(1.25);
   group.add(finalTorii);
   const facelessFigure = buildFacelessFigure();
   facelessFigure.position.set(0, 0, FINAL_TORII_Z - 0.4);
@@ -184,8 +194,8 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
     zFrom: 10.95,
     zTo: -24,
     step: 3.45,
-    width: 0.38,
-    height: 0.55,
+    width: 0.48,
+    height: 0.69,
     y: 1.1,
     skipZRanges: [
       [8.1, 9.9],
@@ -202,8 +212,8 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
     zFrom: 12,
     zTo: -24.3,
     step: 5.7,
-    width: 0.3,
-    height: 0.15,
+    width: 0.38,
+    height: 0.19,
     y: 1.9,
   });
 

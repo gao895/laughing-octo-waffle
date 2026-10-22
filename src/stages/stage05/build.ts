@@ -59,7 +59,7 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
   group.add(doorFrame, signPlane);
   const finalRoomPlateTex = makeRoomNumberTexture("666", false);
   const finalRoomPlate = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.3, 0.22),
+    new THREE.PlaneGeometry(0.38, 0.28),
     new THREE.MeshBasicMaterial({ map: finalRoomPlateTex, toneMapped: false })
   );
   finalRoomPlate.position.set(0.5, 1.3, DOOR_Z - 0.28);
@@ -72,6 +72,7 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
   const elevator = buildElevatorDoors(elevatorIndicatorNormal);
   elevator.group.position.set(-(halfWidthAt(ELEVATOR_Z) - 0.04), 0, ELEVATOR_Z);
   elevator.group.rotation.y = Math.PI / 2;
+  elevator.group.scale.setScalar(1.25);
   group.add(elevator.group);
 
   // --- 荷物カート（z=6, 右壁） ---
@@ -79,6 +80,7 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
   const luggageSlot = new THREE.Group();
   luggageSlot.position.set(halfWidthAt(LUGGAGE_Z) - 0.32, 0, LUGGAGE_Z);
   luggageSlot.rotation.y = -Math.PI / 2;
+  luggageSlot.scale.setScalar(1.25);
   group.add(luggageSlot);
   function rebuildLuggage(extra: boolean) {
     luggageSlot.clear();
@@ -91,7 +93,7 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
   const paintingTexNormal = makePaintingTexture(0);
   const paintingTexAnomaly = makePaintingTexture(1);
   const paintingMat = new THREE.MeshBasicMaterial({ map: paintingTexNormal, toneMapped: false });
-  const paintingPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.52), paintingMat);
+  const paintingPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.53, 0.65), paintingMat);
   paintingPlane.position.set(-(halfWidthAt(PAINTING_Z) - 0.05), 1.4, PAINTING_Z);
   paintingPlane.rotation.y = Math.PI / 2;
   group.add(paintingPlane);
@@ -105,9 +107,10 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
     new THREE.MeshStandardMaterial({ color: 0x3a2a1c, roughness: 0.6 })
   );
   dndDoorFrame.position.set(halfWidthAt(DND_Z) - 0.02, 0.9, DND_Z);
+  dndDoorFrame.scale.setScalar(1.25);
   group.add(dndDoorFrame);
   const dndMat = new THREE.MeshBasicMaterial({ map: dndTexNormal, toneMapped: false });
-  const dndPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.26), dndMat);
+  const dndPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.33), dndMat);
   dndPlane.position.set(halfWidthAt(DND_Z) - 0.05, 1.3, DND_Z);
   dndPlane.rotation.y = -Math.PI / 2;
   group.add(dndPlane);
@@ -119,6 +122,7 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
   const vending = buildVendingMachine(vendingTexNormal);
   vending.group.position.set(-(halfWidthAt(VENDING_Z) - 0.22), 0, VENDING_Z);
   vending.group.rotation.y = Math.PI / 2;
+  vending.group.scale.setScalar(1.25);
   group.add(vending.group);
 
   // --- ルームサービスカート（z=-8.25, 右壁） ---
@@ -127,6 +131,7 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
   const CART_BASE_X = halfWidthAt(CART_Z) - 0.35;
   const CART_MOVED_X = halfWidthAt(CART_Z) - 0.7;
   cartSlot.position.set(CART_BASE_X, 0, CART_Z);
+  cartSlot.scale.setScalar(1.25);
   cartSlot.add(buildRoomServiceCart());
   group.add(cartSlot);
 
@@ -145,6 +150,7 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
   mirrorFrame.add(mirrorGlass);
   mirrorFrame.position.set(-(mirrorHalfWidth - 0.06), 1.3, MIRROR_Z);
   mirrorFrame.rotation.y = Math.PI / 2;
+  mirrorFrame.scale.setScalar(1.25);
   group.add(mirrorFrame);
   const mirrorFigure = buildHotelGuestFigure();
   mirrorFigure.scale.set(0.5, 0.5, 0.02);
@@ -160,6 +166,7 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
   const roomNumMat = roomNumDoor.plateMat;
   roomNumDoor.group.position.set(halfWidthAt(ROOM_NUMBER_Z) - 0.03, 0.98, ROOM_NUMBER_Z);
   roomNumDoor.group.rotation.y = -Math.PI / 2;
+  roomNumDoor.group.scale.setScalar(1.25);
   group.add(roomNumDoor.group);
 
   // --- ボスの人影（本館出口手前, z=-14.8） ---
@@ -197,6 +204,7 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
         doorHandle.group.position.set(-(hw - 0.03), 0.98, z);
         doorHandle.group.rotation.y = Math.PI / 2;
       }
+      doorHandle.group.scale.setScalar(1.25);
       group.add(doorHandle.group);
       doorTexIndex += 1;
     }
@@ -207,8 +215,8 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
     zFrom: 11.4,
     zTo: -23.7,
     step: 4.65,
-    width: 0.4,
-    height: 0.55,
+    width: 0.5,
+    height: 0.69,
     y: 2.0,
   });
   const arrowTextures = [makeArrowSignTexture("right"), makeArrowSignTexture("left")];
@@ -216,8 +224,8 @@ export function buildStage05(scene: THREE.Scene, lighting: LightingManager, audi
     zFrom: 12.45,
     zTo: -24.3,
     step: 6,
-    width: 0.3,
-    height: 0.15,
+    width: 0.38,
+    height: 0.19,
     y: 2.3,
   });
 

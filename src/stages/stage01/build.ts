@@ -70,6 +70,7 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   const CLOCK_Z = 6;
   clockGroup.position.set(-(halfWidthAt(CLOCK_Z) - 0.05), 1.7, CLOCK_Z);
   clockGroup.rotation.y = Math.PI / 2;
+  clockGroup.scale.setScalar(1.25);
   group.add(clockGroup);
   let clockDirection = 1;
 
@@ -77,7 +78,7 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   const posterTexNormal = makePosterTexture(0);
   const posterTexAnomaly = makePosterTexture(1);
   const posterMat = new THREE.MeshBasicMaterial({ map: posterTexNormal, toneMapped: false });
-  const posterPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.85), posterMat);
+  const posterPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.69, 1.06), posterMat);
   const POSTER_Z = 1.5;
   posterPlane.position.set(halfWidthAt(POSTER_Z) - 0.05, 1.3, POSTER_Z);
   posterPlane.rotation.y = -Math.PI / 2;
@@ -93,6 +94,7 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
     for (let i = 0; i < count; i++) {
       const u = buildUmbrella();
       u.position.set(umbrellaHalfWidth - 0.3 + (i % 2) * 0.15, 0, UMBRELLA_Z - Math.floor(i / 2) * 0.22);
+      u.scale.setScalar(1.25);
       umbrellaGroup.add(u);
     }
   }
@@ -114,6 +116,7 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   camHeadPivot.add(camBody, camLens);
   cameraGroup.add(camHeadPivot);
   cameraGroup.position.set(0, 2.4, -3.75);
+  cameraGroup.scale.setScalar(1.25);
   group.add(cameraGroup);
   let cameraFollowActive = false;
 
@@ -132,6 +135,7 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   mirrorFrame.add(mirrorGlass);
   mirrorFrame.position.set(-(mirrorHalfWidth - 0.06), 1.3, MIRROR_Z);
   mirrorFrame.rotation.y = Math.PI / 2;
+  mirrorFrame.scale.setScalar(1.25);
   group.add(mirrorFrame);
 
   const mirrorFigure = buildHumanSilhouette(0x0a0a0a, 0.85);
@@ -161,8 +165,8 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
     zFrom: 14.25,
     zTo: -21,
     step: 3.3,
-    width: 0.4,
-    height: 0.55,
+    width: 0.5,
+    height: 0.69,
     y: 1.3,
     skipZRanges: [
       [8.55, 10.95],
@@ -177,8 +181,8 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
     zFrom: 12.45,
     zTo: -22.5,
     step: 5.4,
-    width: 0.32,
-    height: 0.16,
+    width: 0.4,
+    height: 0.2,
     y: 2.0,
   });
 

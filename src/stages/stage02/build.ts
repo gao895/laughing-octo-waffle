@@ -90,11 +90,13 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   // buildPatientBed()は幅0.55m・奥行き1.1mで作られており、回転させず置くことで
   // 狭い幅(0.55m)だけを通路側に向け、残りの長さは通路に沿わせる（一本道でも干渉しない）。
   bed.position.set(-(halfWidthAt(bedZ) - 0.42), 0, bedZ);
+  bed.scale.setScalar(1.25);
   group.add(bed);
 
   const ivZ = 1.95;
   const ivHandle = buildIVPole();
   ivHandle.group.position.set(-(halfWidthAt(ivZ) - 0.18), 0, ivZ);
+  ivHandle.group.scale.setScalar(1.25);
   group.add(ivHandle.group);
   let ivReversed = false;
   let ivDropT = 0.3;
@@ -103,7 +105,7 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   const chartTexNormal = makeChartTexture(false);
   const chartTexAnomaly = makeChartTexture(true);
   const chartMat = new THREE.MeshBasicMaterial({ map: chartTexNormal, toneMapped: false });
-  const chartPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.44), chartMat);
+  const chartPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.55), chartMat);
   chartPlane.position.set(halfWidthAt(chartZ) - 0.04, 1.3, chartZ);
   chartPlane.rotation.y = -Math.PI / 2;
   group.add(chartPlane);
@@ -124,12 +126,14 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   const wheelchairBasePos = new THREE.Vector3(halfWidthAt(wheelchairBaseZ) - 0.45, 0, wheelchairBaseZ);
   const wheelchairMovedPos = new THREE.Vector3(halfWidthAt(wheelchairMovedZ) - 0.45, 0, wheelchairMovedZ);
   wheelchair.position.copy(wheelchairBasePos);
+  wheelchair.scale.setScalar(1.25);
   group.add(wheelchair);
   let wheelchairDrifting = false;
 
   const speaker = buildNurseSpeaker();
   speaker.position.set(0, 2.5, -9);
   speaker.rotation.x = Math.PI / 2;
+  speaker.scale.setScalar(1.25);
   group.add(speaker);
   let emptyRoomCallActive = false;
   let nurseCallTimer = 0;
@@ -138,7 +142,7 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   const ecgTexNormal = makeECGTexture(false);
   const ecgTexSpiky = makeECGTexture(true);
   const ecgMat = new THREE.MeshBasicMaterial({ map: ecgTexNormal, toneMapped: false });
-  const ecgPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.2), ecgMat);
+  const ecgPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.25), ecgMat);
   ecgPlane.position.set(-(halfWidthAt(ecgZ) - 0.04), 1.5, ecgZ);
   ecgPlane.rotation.y = Math.PI / 2;
   group.add(ecgPlane);
@@ -147,7 +151,7 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   const roomNumTexNormal = makeRoomNumberTexture("204", false);
   const roomNumTexGlitch = makeRoomNumberTexture("666", true);
   const roomNumMat = new THREE.MeshBasicMaterial({ map: roomNumTexNormal, toneMapped: false });
-  const roomNumPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.21), roomNumMat);
+  const roomNumPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.26), roomNumMat);
   roomNumPlane.position.set(halfWidthAt(roomNumZ) - 0.04, 1.9, roomNumZ);
   roomNumPlane.rotation.y = -Math.PI / 2;
   group.add(roomNumPlane);
@@ -159,7 +163,7 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
     emissiveIntensity: 0.2,
     roughness: 0.4,
   });
-  const lampMesh = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12), lampMat);
+  const lampMesh = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 12), lampMat);
   lampMesh.position.set(0, 2.45, -18.75);
   group.add(lampMesh);
   const operatingLight = new THREE.PointLight(0xff2222, 0, 3.5, 2);
@@ -174,8 +178,8 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
     zFrom: 11.25,
     zTo: -21,
     step: 3.3,
-    width: 0.38,
-    height: 0.52,
+    width: 0.48,
+    height: 0.65,
     y: 1.3,
     skipZRanges: [
       [4.35, 8.7],
@@ -191,8 +195,8 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
     zFrom: 10.2,
     zTo: -22.5,
     step: 5.1,
-    width: 0.3,
-    height: 0.15,
+    width: 0.38,
+    height: 0.19,
     y: 2.0,
     skipZRanges: [[-10.8, -6.45]],
   });

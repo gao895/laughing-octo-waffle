@@ -132,7 +132,7 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
   const shoeTexNormal = makeShoeCubbyTexture(false);
   const shoeTexAnomaly = makeShoeCubbyTexture(true);
   const shoeMat = new THREE.MeshBasicMaterial({ map: shoeTexNormal, toneMapped: false });
-  const shoePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.75, 0.52), shoeMat);
+  const shoePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.94, 0.65), shoeMat);
   shoePlane.position.set(-(halfWidthAt(SHOE_Z) - 0.04), 1.05, SHOE_Z);
   shoePlane.rotation.y = Math.PI / 2;
   group.add(shoePlane);
@@ -142,7 +142,7 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
   const portraitTexNormal = makeClassPortraitTexture(false);
   const portraitTexAnomaly = makeClassPortraitTexture(true);
   const portraitMat = new THREE.MeshBasicMaterial({ map: portraitTexNormal, toneMapped: false });
-  const portraitPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.5), portraitMat);
+  const portraitPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.78, 0.63), portraitMat);
   portraitPlane.position.set(halfWidthAt(PORTRAIT_Z) - 0.04, 1.5, PORTRAIT_Z);
   portraitPlane.rotation.y = -Math.PI / 2;
   group.add(portraitPlane);
@@ -153,6 +153,7 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
   const lockerSlot = new THREE.Group();
   lockerSlot.position.set(-(halfWidthAt(LOCKER_Z) - 0.16), 0, LOCKER_Z + ((LOCKER_COUNT - 1) * 0.32) / 2);
   lockerSlot.rotation.y = Math.PI / 2;
+  lockerSlot.scale.setScalar(1.25);
   group.add(lockerSlot);
   function rebuildLockers(ajarIndex: number | null) {
     lockerSlot.clear();
@@ -165,6 +166,7 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
   const windowA = buildClassroomWindow();
   windowA.group.position.set(halfWidthAt(WINDOW_A_Z) - 0.22, 1.35, WINDOW_A_Z);
   windowA.group.rotation.y = -Math.PI / 2;
+  windowA.group.scale.setScalar(1.25);
   group.add(windowA.group);
   const chalkboardBlankTex = makeChalkboardTexture("");
   const chalkboardMessageTex = makeChalkboardTexture("おかえり");
@@ -192,6 +194,7 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
   reflectFrame.add(reflectGlass);
   reflectFrame.position.set(reflectHalfWidth - 0.06, 1.3, REFLECT_Z);
   reflectFrame.rotation.y = -Math.PI / 2;
+  reflectFrame.scale.setScalar(1.25);
   group.add(reflectFrame);
 
   const reflectFigure = buildStudentFigure();
@@ -205,6 +208,7 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
   const speaker = buildNurseSpeaker();
   speaker.position.set(0, 2.45, -16.5);
   speaker.rotation.x = Math.PI / 2;
+  speaker.scale.setScalar(1.25);
   group.add(speaker);
 
   // --- 教室の窓B（ボス異変専用, ドア手前 z=-14.8） ---
@@ -212,6 +216,7 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
   const windowB = buildClassroomWindow();
   windowB.group.position.set(-(halfWidthAt(WINDOW_B_Z) - 0.22), 1.35, WINDOW_B_Z);
   windowB.group.rotation.y = Math.PI / 2;
+  windowB.group.scale.setScalar(1.25);
   group.add(windowB.group);
   const bossChalkboardTex = makeChalkboardTexture("おかえりなさい");
 
@@ -221,8 +226,8 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
     zFrom: 10.95,
     zTo: -23.7,
     step: 3.15,
-    width: 0.4,
-    height: 0.55,
+    width: 0.5,
+    height: 0.69,
     y: 1.3,
     skipZRanges: [
       [8.55, 10.35],
@@ -238,8 +243,8 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
     zFrom: 12.45,
     zTo: -24,
     step: 5.4,
-    width: 0.32,
-    height: 0.16,
+    width: 0.4,
+    height: 0.2,
     y: 2.0,
   });
   const classDoorTextures = ["1-A", "1-B", "1-C", "1-D"].map((t) => makeRoomNumberTexture(t, false));
@@ -247,8 +252,8 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
     zFrom: -5.4,
     zTo: -20.4,
     step: 4.2,
-    width: 0.28,
-    height: 0.2,
+    width: 0.35,
+    height: 0.25,
     y: 1.0,
     skipZRanges: [
       [-10.2, -7.8],
