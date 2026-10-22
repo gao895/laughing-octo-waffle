@@ -12,6 +12,7 @@ import { EndingManager } from "./EndingManager";
 import { buildStage01 } from "../stages/stage01/build";
 import { buildStage02 } from "../stages/stage02/build";
 import { buildStage03 } from "../stages/stage03/build";
+import { buildStage04 } from "../stages/stage04/build";
 import { getStageConfig } from "../data/stages";
 import { getAnomaliesForStage } from "../data/anomalies";
 import type { GameState, PlayerAction } from "../types/gameTypes";
@@ -22,6 +23,7 @@ const STAGE_BUILDERS: Record<number, (scene: THREE.Scene, lighting: LightingMana
   1: buildStage01,
   2: buildStage02,
   3: buildStage03,
+  4: buildStage04,
 };
 
 export interface HudFrameInfo {

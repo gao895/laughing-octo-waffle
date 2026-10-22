@@ -904,3 +904,285 @@ export function buildDeskRow(count: number): THREE.Group {
   }
   return group;
 }
+
+// ============================================================
+// STAGE04「夜神社」用テクスチャ・小道具
+// ============================================================
+
+export function makeShrinePathTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(256, 256);
+  noiseFill(ctx, 256, 256, "#4a4740", 14);
+  ctx.fillStyle = "rgba(20,18,14,0.3)";
+  for (let i = 0; i < 40; i++) {
+    const x = Math.random() * 256;
+    const y = Math.random() * 256;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 3 + Math.random() * 5, 2 + Math.random() * 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(4, 14);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+export function makeHedgeWallTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(256, 256);
+  noiseFill(ctx, 256, 256, "#111613", 10);
+  ctx.fillStyle = "rgba(20,30,20,0.4)";
+  for (let i = 0; i < 60; i++) {
+    ctx.beginPath();
+    ctx.arc(Math.random() * 256, Math.random() * 256, 4 + Math.random() * 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 夜空（「天井」用）。かすかな星をちりばめる */
+export function makeNightSkyTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(256, 256);
+  ctx.fillStyle = "#040308";
+  ctx.fillRect(0, 0, 256, 256);
+  ctx.fillStyle = "rgba(220,220,240,0.6)";
+  for (let i = 0; i < 70; i++) {
+    const x = Math.random() * 256;
+    const y = Math.random() * 256;
+    const r = Math.random() < 0.15 ? 1.4 : 0.6;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(2, 6);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 絵馬。messageで書かれている願い事の文字を変える */
+export function makeEmaTexture(message: string): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(112, 128);
+  ctx.fillStyle = "#caa15a";
+  ctx.beginPath();
+  ctx.moveTo(4, 24);
+  ctx.lineTo(56, 4);
+  ctx.lineTo(108, 24);
+  ctx.lineTo(108, 124);
+  ctx.lineTo(4, 124);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "#6b4a22";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = "#2a1c0e";
+  ctx.font = "20px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("奉", 56, 60);
+  if (message) {
+    ctx.fillStyle = "#1a1210";
+    ctx.font = "14px sans-serif";
+    ctx.fillText(message, 56, 94);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 参道に繰り返し立てる木製案内札 */
+export function makeShrineNoticeTexture(variant: number): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 176);
+  ctx.fillStyle = "#3a2e1e";
+  ctx.fillRect(0, 0, 128, 176);
+  ctx.strokeStyle = "#1c150c";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, 124, 172);
+
+  const items: [string, string][] = [
+    ["清め", "手水にて心身を清めてください"],
+    ["一礼", "鳥居の前では一礼を"],
+    ["参拝順路", "矢印に沿ってお進みください"],
+    ["私語厳禁", "参道では静かにお歩きください"],
+  ];
+  const [title, body] = items[variant % items.length];
+
+  ctx.fillStyle = "#e8dcb8";
+  ctx.font = "bold 20px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(title, 64, 34);
+
+  ctx.strokeStyle = "#c2a04a";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(24, 46);
+  ctx.lineTo(104, 46);
+  ctx.stroke();
+
+  ctx.fillStyle = "#cfc49e";
+  ctx.font = "11px sans-serif";
+  let line = "";
+  let y = 70;
+  for (const ch of body) {
+    line += ch;
+    if (line.length >= 8) {
+      ctx.fillText(line, 64, y);
+      line = "";
+      y += 16;
+    }
+  }
+  if (line) ctx.fillText(line, 64, y);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 鳥居（朱塗りの柱2本+貫+笠木）。widthで柱の間隔、heightで高さを指定する */
+export function buildToriiGate(width = 1.9, height = 2.6): THREE.Group {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color: 0xa3321f, roughness: 0.7 });
+  const pillarGeo = new THREE.CylinderGeometry(0.08, 0.09, height, 10);
+  const pillarL = new THREE.Mesh(pillarGeo, mat);
+  pillarL.position.set(-width / 2, height / 2, 0);
+  const pillarR = new THREE.Mesh(pillarGeo, mat);
+  pillarR.position.set(width / 2, height / 2, 0);
+  const nuki = new THREE.Mesh(new THREE.BoxGeometry(width + 0.3, 0.12, 0.12), mat);
+  nuki.position.set(0, height * 0.72, 0);
+  const kasagi = new THREE.Mesh(new THREE.BoxGeometry(width + 0.6, 0.16, 0.22), mat);
+  kasagi.position.set(0, height + 0.1, 0);
+  const shimaki = new THREE.Mesh(
+    new THREE.BoxGeometry(width + 0.5, 0.08, 0.18),
+    new THREE.MeshStandardMaterial({ color: 0x1c1c1c, roughness: 0.6 })
+  );
+  shimaki.position.set(0, height + 0.02, 0);
+  group.add(pillarL, pillarR, nuki, kasagi, shimaki);
+  return group;
+}
+
+export interface StoneLanternHandle {
+  group: THREE.Group;
+  flame: THREE.Mesh;
+  flameLight: THREE.PointLight;
+}
+
+/** 石灯籠。flame/flameLightを切り替えることで「灯りが消えている」異変を表現する */
+export function buildStoneLantern(): StoneLanternHandle {
+  const group = new THREE.Group();
+  const stoneMat = new THREE.MeshStandardMaterial({ color: 0x5c5a52, roughness: 0.95 });
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.1, 8), stoneMat);
+  base.position.y = 0.05;
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.55, 8), stoneMat);
+  pole.position.y = 0.38;
+  const house = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.26, 8), stoneMat);
+  house.position.y = 0.78;
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.16, 8), stoneMat);
+  roof.position.y = 0.98;
+  const flameMat = new THREE.MeshBasicMaterial({ color: 0xffb347, toneMapped: false });
+  const flame = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), flameMat);
+  flame.position.y = 0.78;
+  const flameLight = new THREE.PointLight(0xffb347, 2.2, 3, 2);
+  flameLight.position.y = 0.78;
+  group.add(base, pole, house, roof, flame, flameLight);
+  return { group, flame, flameLight };
+}
+
+export interface KomainuHandle {
+  group: THREE.Group;
+  headPivot: THREE.Object3D;
+}
+
+/** 狛犬。headPivot.rotation.yでプレイヤー方向へ顔を向けられるようにする */
+export function buildKomainu(mirrored: boolean): KomainuHandle {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color: 0x8a8578, roughness: 0.9 });
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.4), mat);
+  base.position.y = 0.05;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.28, 0.34), mat);
+  body.position.y = 0.26;
+  const headPivot = new THREE.Object3D();
+  headPivot.position.set(0, 0.42, mirrored ? -0.14 : 0.14);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.16), mat);
+  const earGeo = new THREE.ConeGeometry(0.04, 0.08, 6);
+  const earL = new THREE.Mesh(earGeo, mat);
+  earL.position.set(-0.06, 0.1, 0);
+  const earR = new THREE.Mesh(earGeo, mat);
+  earR.position.set(0.06, 0.1, 0);
+  headPivot.add(head, earL, earR);
+  group.add(base, body, headPivot);
+  return { group, headPivot };
+}
+
+export interface ChozuyaHandle {
+  group: THREE.Group;
+  waterMat: THREE.MeshStandardMaterial;
+}
+
+/** 手水舎の水盤。waterMat.colorを変えることで「水が赤い」異変を表現する */
+export function buildChozuya(): ChozuyaHandle {
+  const group = new THREE.Group();
+  const stoneMat = new THREE.MeshStandardMaterial({ color: 0x4a4842, roughness: 0.9 });
+  const basin = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.26, 0.26, 10), stoneMat);
+  basin.position.y = 0.13;
+  const waterMat = new THREE.MeshStandardMaterial({ color: 0x3a6a78, roughness: 0.15, metalness: 0.3 });
+  const water = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.02, 10), waterMat);
+  water.position.y = 0.25;
+  const roofPostGeo = new THREE.CylinderGeometry(0.03, 0.03, 1.1, 6);
+  const posts: THREE.Mesh[] = [];
+  for (const [x, z] of [
+    [-0.3, -0.3],
+    [0.3, -0.3],
+    [-0.3, 0.3],
+    [0.3, 0.3],
+  ] as [number, number][]) {
+    const post = new THREE.Mesh(roofPostGeo, stoneMat);
+    post.position.set(x, 0.55, z);
+    posts.push(post);
+  }
+  const roof = new THREE.Mesh(
+    new THREE.ConeGeometry(0.55, 0.3, 4),
+    new THREE.MeshStandardMaterial({ color: 0x2a2420, roughness: 0.8 })
+  );
+  roof.rotation.y = Math.PI / 4;
+  roof.position.y = 1.25;
+  group.add(basin, water, roof, ...posts);
+  return { group, waterMat };
+}
+
+/** しめ縄＋紙垂のゲート。shideCountで紙垂の本数を変化させる */
+export function buildShimenawaGate(shideCount: number): THREE.Group {
+  const group = new THREE.Group();
+  const ropeMat = new THREE.MeshStandardMaterial({ color: 0xe8ddc0, roughness: 0.95 });
+  const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 1.9, 8), ropeMat);
+  rope.rotation.z = Math.PI / 2;
+  group.add(rope);
+  const shideMat = new THREE.MeshBasicMaterial({ color: 0xf4f1e6, toneMapped: false, side: THREE.DoubleSide });
+  for (let i = 0; i < shideCount; i++) {
+    const shide = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.26), shideMat);
+    const t = shideCount === 1 ? 0 : i / (shideCount - 1) - 0.5;
+    shide.position.set(t * 1.6, -0.18, 0);
+    group.add(shide);
+  }
+  return group;
+}
+
+/** 石段（装飾用）。countで段数を変化させる */
+export function buildStoneSteps(count: number): THREE.Group {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color: 0x5c5a52, roughness: 0.95 });
+  for (let i = 0; i < count; i++) {
+    const step = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.16), mat);
+    step.position.set(0, i * 0.08, -i * 0.16);
+    group.add(step);
+  }
+  return group;
+}
+
+const SHRINE_FIGURE_COLORS: HumanoidColors = { skin: 0x2a2622, outfit: 0x1c1a18, legs: 0x141210 };
+
+/** 顔のない人影（STAGE04ボス用）。あえて顔のパーツを付けない低ポリ人型 */
+export function buildFacelessFigure(): THREE.Group {
+  return buildHumanoidFigure(SHRINE_FIGURE_COLORS);
+}
