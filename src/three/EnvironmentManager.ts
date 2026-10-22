@@ -1564,3 +1564,214 @@ export function buildHotelDoorPanel(numberTex: THREE.Texture): HotelDoorHandle {
 
   return { group, plateMat };
 }
+
+// ============================================================
+// STAGE06「終電」用テクスチャ・小道具
+// ============================================================
+
+export function makeTrainWallTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(256, 256);
+  noiseFill(ctx, 256, 256, "#c8c2b0", 8);
+  ctx.strokeStyle = "rgba(90,85,70,0.3)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, 120);
+  ctx.lineTo(256, 120);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(60,80,90,0.3)";
+  ctx.fillRect(0, 150, 256, 60);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+export function makeTrainFloorTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(256, 256);
+  noiseFill(ctx, 256, 256, "#3a3a3e", 10);
+  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  for (let y = 0; y < 256; y += 16) {
+    for (let x = 0; x < 256; x += 16) {
+      if ((x / 16 + y / 16) % 2 === 0) ctx.fillRect(x, y, 16, 16);
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(3, 14);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 路線図。anomalyで知らない駅名が紛れ込む */
+export function makeRouteMapTexture(anomaly: boolean): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(192, 96);
+  ctx.fillStyle = "#eef0e8";
+  ctx.fillRect(0, 0, 192, 96);
+  ctx.strokeStyle = "#2a6a3a";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(10, 48);
+  ctx.lineTo(182, 48);
+  ctx.stroke();
+  const stations = ["中央", "本町", "花園", "北山", "終点"];
+  ctx.font = "9px sans-serif";
+  ctx.textAlign = "center";
+  for (let i = 0; i < stations.length; i++) {
+    const x = 20 + i * 38;
+    ctx.fillStyle = "#1c1c1c";
+    ctx.beginPath();
+    ctx.arc(x, 48, 4, 0, Math.PI * 2);
+    ctx.fill();
+    const label = anomaly && i === 3 ? "誰そ彼" : stations[i];
+    ctx.fillStyle = anomaly && i === 3 ? "#a01010" : "#1c1c1c";
+    ctx.fillText(label, x, 66);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 車内広告。anomalyで不穏な内容に変わる */
+export function makeTrainAdTexture(anomaly: boolean): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(160, 96);
+  ctx.fillStyle = anomaly ? "#160808" : "#f0e8d8";
+  ctx.fillRect(0, 0, 160, 96);
+  ctx.strokeStyle = "#8a8366";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(2, 2, 156, 92);
+  ctx.textAlign = "center";
+  if (anomaly) {
+    ctx.fillStyle = "#a01010";
+    ctx.font = "bold 16px sans-serif";
+    ctx.fillText("おりられません", 80, 44);
+    ctx.font = "11px sans-serif";
+    ctx.fillText("このまま終点まで", 80, 64);
+  } else {
+    ctx.fillStyle = "#2a2a2a";
+    ctx.font = "bold 14px sans-serif";
+    ctx.fillText("キャンペーン実施中", 80, 40);
+    ctx.font = "10px sans-serif";
+    ctx.fillText("詳しくは窓口まで", 80, 58);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 優先席プレート。anomalyでプレイヤー自身の名前が書かれる */
+export function makePrioritySeatTexture(anomaly: boolean): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 64);
+  ctx.fillStyle = "#1c2a4a";
+  ctx.fillRect(0, 0, 128, 64);
+  ctx.strokeStyle = "#e8d060";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(2, 2, 124, 60);
+  ctx.fillStyle = "#e8d060";
+  ctx.font = "bold 14px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("優先席", 64, 26);
+  ctx.font = "9px sans-serif";
+  ctx.fillStyle = anomaly ? "#ff4a4a" : "#c9d0e0";
+  ctx.fillText(anomaly ? "あなたの席です" : "お譲りください", 64, 46);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** ベンチシート（座席）。lengthで長さを指定する */
+export function buildTrainSeatBench(length: number): THREE.Group {
+  const group = new THREE.Group();
+  const cushionMat = new THREE.MeshStandardMaterial({ color: 0x5a7a52, roughness: 0.9 });
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x8a8880, roughness: 0.4, metalness: 0.6 });
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.08, length), cushionMat);
+  seat.position.y = 0.42;
+  const back = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, length), cushionMat);
+  back.position.set(-0.17, 0.68, 0);
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.38, length - 0.04), frameMat);
+  frame.position.y = 0.2;
+  group.add(seat, back, frame);
+  return group;
+}
+
+export interface StrapRowHandle {
+  group: THREE.Group;
+  straps: THREE.Object3D[];
+}
+
+/** つり革の列。countで本数、spacingで間隔を指定する */
+export function buildStrapRow(count: number, spacing: number): StrapRowHandle {
+  const group = new THREE.Group();
+  const railMat = new THREE.MeshStandardMaterial({ color: 0x9a9890, roughness: 0.3, metalness: 0.7 });
+  const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, count * spacing, 8), railMat);
+  rail.rotation.z = Math.PI / 2;
+  group.add(rail);
+
+  const strapMat = new THREE.MeshStandardMaterial({ color: 0x1c1c1c, roughness: 0.8 });
+  const ringMat = new THREE.MeshStandardMaterial({ color: 0xc9a84a, roughness: 0.4, metalness: 0.6 });
+  const straps: THREE.Object3D[] = [];
+  for (let i = 0; i < count; i++) {
+    const pivot = new THREE.Object3D();
+    pivot.position.set((i - (count - 1) / 2) * spacing, 0, 0);
+    const band = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.22, 0.008), strapMat);
+    band.position.y = -0.14;
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.012, 6, 12), ringMat);
+    ring.position.y = -0.28;
+    pivot.add(band, ring);
+    group.add(pivot);
+    straps.push(pivot);
+  }
+  return { group, straps };
+}
+
+export interface EmergencyButtonHandle {
+  group: THREE.Group;
+  lampMat: THREE.MeshStandardMaterial;
+  light: THREE.PointLight;
+}
+
+export function buildEmergencyButton(): EmergencyButtonHandle {
+  const group = new THREE.Group();
+  const boxMat = new THREE.MeshStandardMaterial({ color: 0xe8e8e0, roughness: 0.5 });
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.04), boxMat);
+  const lampMat = new THREE.MeshStandardMaterial({
+    color: 0x3a0808,
+    emissive: 0x3a0808,
+    emissiveIntensity: 0.3,
+    roughness: 0.4,
+  });
+  const lamp = new THREE.Mesh(new THREE.CircleGeometry(0.035, 12), lampMat);
+  lamp.position.z = 0.021;
+  const light = new THREE.PointLight(0xff2a2a, 0, 1.2, 2);
+  light.position.z = 0.05;
+  group.add(box, lamp, light);
+  return { group, lampMat, light };
+}
+
+export interface TrainWindowHandle {
+  group: THREE.Group;
+  glassMat: THREE.MeshStandardMaterial;
+}
+
+/** 車窓（暗闇に沈んだガラス窓。夜は鏡のように映り込む） */
+export function buildTrainWindow(width: number, height: number): TrainWindowHandle {
+  const group = new THREE.Group();
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x7a7870, roughness: 0.4, metalness: 0.5 });
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(width + 0.06, height + 0.06, 0.03), frameMat);
+  group.add(frame);
+  const glassMat = new THREE.MeshStandardMaterial({
+    color: 0x05060a,
+    roughness: 0.1,
+    metalness: 0.6,
+  });
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(width, height), glassMat);
+  glass.position.z = 0.02;
+  group.add(glass);
+  return { group, glassMat };
+}
+
+const TRAIN_PASSENGER_COLORS: HumanoidColors = { skin: 0xc9b9a3, outfit: 0x24282e, legs: 0x1a1a1e };
+
+/** 乗客風の人影（STAGE06用） */
+export function buildTrainPassengerFigure(): THREE.Group {
+  return buildHumanoidFigure(TRAIN_PASSENGER_COLORS);
+}
