@@ -22,10 +22,10 @@ import {
 } from "../../three/EnvironmentManager";
 import { buildCorridorShell, addCorridorLights, buildDoorAndSign, scatterWallDecor } from "../shared/corridorBuilder";
 
-const Z_MIN = -16.6;
-const Z_MAX = 11;
-const SPAWN_Z = 8;
-const DOOR_Z = -16;
+const Z_MIN = -24.9;
+const Z_MAX = 16.5;
+const SPAWN_Z = 12;
+const DOOR_Z = -24;
 // 8番出口のような「一本道」を再現するため、通路幅は部屋状の膨らみを持たせず一定にする
 const HALF_WIDTH = 1.3;
 
@@ -48,7 +48,7 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   group.name = "stage02";
 
   // --- 天井灯 ---
-  const lightZs = [6, 3, -1, -4.5, -8, -12, -15];
+  const lightZs = [9, 4.5, -1.5, -6.75, -12, -18, -22.5];
   const lightEntries: CorridorLight[] = addCorridorLights(scene, lighting, lightZs, 2.3, 5, 0xd8e4e0);
   void lightEntries;
 
@@ -65,8 +65,8 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   const sameFaceTexture = makePatientFaceTexture(13);
   const patientFaceMeshes: THREE.Mesh[] = [];
   const PATIENT_MARGIN = 0.32; // 胴体半径0.16 + 余白
-  const PATIENT_Z_START = 5.5;
-  const PATIENT_Z_STEP = 0.6;
+  const PATIENT_Z_START = 8.25;
+  const PATIENT_Z_STEP = 0.9;
 
   function rebuildPatients(count: number) {
     patientGroup.clear();
@@ -85,21 +85,21 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   }
   rebuildPatients(2);
 
-  const bedZ = 2;
+  const bedZ = 3;
   const bed = buildPatientBed();
   // buildPatientBed()は幅0.55m・奥行き1.1mで作られており、回転させず置くことで
   // 狭い幅(0.55m)だけを通路側に向け、残りの長さは通路に沿わせる（一本道でも干渉しない）。
   bed.position.set(-(halfWidthAt(bedZ) - 0.42), 0, bedZ);
   group.add(bed);
 
-  const ivZ = 1.3;
+  const ivZ = 1.95;
   const ivHandle = buildIVPole();
   ivHandle.group.position.set(-(halfWidthAt(ivZ) - 0.18), 0, ivZ);
   group.add(ivHandle.group);
   let ivReversed = false;
   let ivDropT = 0.3;
 
-  const chartZ = 0.4;
+  const chartZ = 0.6;
   const chartTexNormal = makeChartTexture(false);
   const chartTexAnomaly = makeChartTexture(true);
   const chartMat = new THREE.MeshBasicMaterial({ map: chartTexNormal, toneMapped: false });
@@ -108,7 +108,7 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   chartPlane.rotation.y = -Math.PI / 2;
   group.add(chartPlane);
 
-  const nurseWallZ = -3;
+  const nurseWallZ = -4.5;
   const nurseInWall = buildNurseFigure();
   nurseInWall.scale.set(0.9, 0.9, 0.9);
   nurseInWall.position.set(-halfWidthAt(nurseWallZ), 0, nurseWallZ);
@@ -116,8 +116,8 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   nurseInWall.visible = false;
   group.add(nurseInWall);
 
-  const wheelchairBaseZ = -5;
-  const wheelchairMovedZ = -6.5;
+  const wheelchairBaseZ = -7.5;
+  const wheelchairMovedZ = -9.75;
   const wheelchair = buildWheelchair();
   // 車輪が左右に張り出すため90度回転させ、狭い奥行き方向だけを通路側に向ける
   wheelchair.rotation.y = Math.PI / 2;
@@ -128,13 +128,13 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   let wheelchairDrifting = false;
 
   const speaker = buildNurseSpeaker();
-  speaker.position.set(0, 2.5, -6);
+  speaker.position.set(0, 2.5, -9);
   speaker.rotation.x = Math.PI / 2;
   group.add(speaker);
   let emptyRoomCallActive = false;
   let nurseCallTimer = 0;
 
-  const ecgZ = -8;
+  const ecgZ = -12;
   const ecgTexNormal = makeECGTexture(false);
   const ecgTexSpiky = makeECGTexture(true);
   const ecgMat = new THREE.MeshBasicMaterial({ map: ecgTexNormal, toneMapped: false });
@@ -143,7 +143,7 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   ecgPlane.rotation.y = Math.PI / 2;
   group.add(ecgPlane);
 
-  const roomNumZ = -10;
+  const roomNumZ = -15;
   const roomNumTexNormal = makeRoomNumberTexture("204", false);
   const roomNumTexGlitch = makeRoomNumberTexture("666", true);
   const roomNumMat = new THREE.MeshBasicMaterial({ map: roomNumTexNormal, toneMapped: false });
@@ -160,7 +160,7 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
     roughness: 0.4,
   });
   const lampMesh = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12), lampMat);
-  lampMesh.position.set(0, 2.45, -12.5);
+  lampMesh.position.set(0, 2.45, -18.75);
   group.add(lampMesh);
   const operatingLight = new THREE.PointLight(0xff2222, 0, 3.5, 2);
   operatingLight.position.copy(lampMesh.position);
@@ -171,30 +171,30 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   // --- 壁沿いの掲示物（8番出口のように、毎回同じはずのものを並べて密度を作る） ---
   const noticeTextures = [0, 1, 2, 3].map((v) => makeHospitalNoticeTexture(v));
   scatterWallDecor(group, halfWidthAt, noticeTextures, {
-    zFrom: 7.5,
-    zTo: -14,
-    step: 2.2,
+    zFrom: 11.25,
+    zTo: -21,
+    step: 3.3,
     width: 0.38,
     height: 0.52,
     y: 1.3,
     skipZRanges: [
-      [2.9, 5.8],
-      [0.1, 2.3],
-      [-3.8, -2.2],
-      [-8.5, -7.5],
-      [-10.6, -9.4],
-      [-15.6, -14],
+      [4.35, 8.7],
+      [0.15, 3.45],
+      [-5.7, -3.3],
+      [-12.75, -11.25],
+      [-15.9, -14.1],
+      [-23.4, -21],
     ],
   });
   const arrowTextures = [makeArrowSignTexture("right"), makeArrowSignTexture("left")];
   scatterWallDecor(group, halfWidthAt, arrowTextures, {
-    zFrom: 6.8,
-    zTo: -15,
-    step: 3.4,
+    zFrom: 10.2,
+    zTo: -22.5,
+    step: 5.1,
     width: 0.3,
     height: 0.15,
     y: 2.0,
-    skipZRanges: [[-7.2, -4.3]],
+    skipZRanges: [[-10.8, -6.45]],
   });
 
   // --- 状態管理 ---

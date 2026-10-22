@@ -16,10 +16,10 @@ import {
 } from "../../three/EnvironmentManager";
 import { buildCorridorShell, addCorridorLights, buildDoorAndSign, scatterWallDecor } from "../shared/corridorBuilder";
 
-const Z_MIN = -16.6;
-const Z_MAX = 11;
-const SPAWN_Z = 8;
-const DOOR_Z = -16;
+const Z_MIN = -24.9;
+const Z_MAX = 16.5;
+const SPAWN_Z = 12;
+const DOOR_Z = -24;
 // 8番出口のような「一本道」を再現するため、通路幅は部屋状の膨らみを持たせず一定にする
 const HALF_WIDTH = 1.3;
 
@@ -43,9 +43,9 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   group.name = "stage01";
 
   // --- 天井の蛍光灯 ---
-  const lightZs = [6, 3, -1, -4.5, -8, -12, -15];
+  const lightZs = [9, 4.5, -1.5, -6.75, -12, -18, -22.5];
   const lightEntries: CorridorLight[] = addCorridorLights(scene, lighting, lightZs);
-  const flickerLight = lightEntries[4]; // z = -8 のライト（room2付近）
+  const flickerLight = lightEntries[4]; // z = -12 のライト（room2付近）
 
   // --- 出口扉と看板 ---
   const signTexNormal = makeSignTexture("EXIT", "#ff2a2a");
@@ -53,7 +53,7 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   const { doorFrame, signPlane, signMat } = buildDoorAndSign(DOOR_Z, signTexNormal);
   group.add(doorFrame, signPlane);
 
-  // --- 時計（壁掛け, z=4） ---
+  // --- 時計（壁掛け, z=6） ---
   const clockGroup = new THREE.Group();
   const clockFaceMat = new THREE.MeshBasicMaterial({ map: makeClockFaceTexture(), toneMapped: false });
   const clockFace = new THREE.Mesh(new THREE.CircleGeometry(0.32, 24), clockFaceMat);
@@ -67,26 +67,26 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   handPivot.add(hand);
   handPivot.position.z = 0.01;
   clockGroup.add(handPivot);
-  const CLOCK_Z = 4;
+  const CLOCK_Z = 6;
   clockGroup.position.set(-(halfWidthAt(CLOCK_Z) - 0.05), 1.7, CLOCK_Z);
   clockGroup.rotation.y = Math.PI / 2;
   group.add(clockGroup);
   let clockDirection = 1;
 
-  // --- ポスター（反対側の壁, z=1） ---
+  // --- ポスター（反対側の壁, z=1.5） ---
   const posterTexNormal = makePosterTexture(0);
   const posterTexAnomaly = makePosterTexture(1);
   const posterMat = new THREE.MeshBasicMaterial({ map: posterTexNormal, toneMapped: false });
   const posterPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.85), posterMat);
-  const POSTER_Z = 1;
+  const POSTER_Z = 1.5;
   posterPlane.position.set(halfWidthAt(POSTER_Z) - 0.05, 1.3, POSTER_Z);
   posterPlane.rotation.y = -Math.PI / 2;
   group.add(posterPlane);
 
-  // --- 傘立て（START付近, z=6.5） ---
+  // --- 傘立て（START付近, z=9.75） ---
   const umbrellaGroup = new THREE.Group();
   group.add(umbrellaGroup);
-  const UMBRELLA_Z = 6.5;
+  const UMBRELLA_Z = 9.75;
   const umbrellaHalfWidth = halfWidthAt(UMBRELLA_Z);
   function rebuildUmbrellas(count: number) {
     umbrellaGroup.clear();
@@ -98,7 +98,7 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   }
   rebuildUmbrellas(2);
 
-  // --- 防犯カメラ（天井中央, z=-2.5） ---
+  // --- 防犯カメラ（天井中央, z=-3.75） ---
   const cameraGroup = new THREE.Group();
   const camBody = new THREE.Mesh(
     new THREE.BoxGeometry(0.15, 0.12, 0.22),
@@ -113,12 +113,12 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   camLens.position.z = 0.13;
   camHeadPivot.add(camBody, camLens);
   cameraGroup.add(camHeadPivot);
-  cameraGroup.position.set(0, 2.4, -2.5);
+  cameraGroup.position.set(0, 2.4, -3.75);
   group.add(cameraGroup);
   let cameraFollowActive = false;
 
-  // --- 鏡（壁掛け, z=-5.5） ---
-  const MIRROR_Z = -5.5;
+  // --- 鏡（壁掛け, z=-8.25） ---
+  const MIRROR_Z = -8.25;
   const mirrorHalfWidth = halfWidthAt(MIRROR_Z);
   const mirrorFrame = new THREE.Mesh(
     new THREE.BoxGeometry(0.7, 1.1, 0.04),
@@ -143,7 +143,7 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
 
   // --- 通路奥の人影（異変時のみ出現） ---
   const distantFigure = buildHumanSilhouette(0x000000, 1);
-  distantFigure.position.set(0.2, 0, -13);
+  distantFigure.position.set(0.2, 0, -19.5);
   distantFigure.visible = false;
   group.add(distantFigure);
   let distantFigureHiddenByProximity = false;
@@ -151,32 +151,32 @@ export function buildStage01(scene: THREE.Scene, lighting: LightingManager, audi
   // --- 最終異変：もう一人のプレイヤー ---
   const finalDouble = buildHumanSilhouette(0x000000, 1);
   finalDouble.scale.set(1.05, 1.05, 1.05);
-  finalDouble.position.set(0, 0, DOOR_Z + 1.2);
+  finalDouble.position.set(0, 0, DOOR_Z + 1.8);
   finalDouble.visible = false;
   group.add(finalDouble);
 
   // --- 壁沿いの掲示物（8番出口のように、毎回同じはずのものを並べて密度を作る） ---
   const noticeTextures = [0, 1, 2, 3].map((v) => makeNoticePosterTexture(v));
   scatterWallDecor(group, halfWidthAt, noticeTextures, {
-    zFrom: 9.5,
-    zTo: -14,
-    step: 2.2,
+    zFrom: 14.25,
+    zTo: -21,
+    step: 3.3,
     width: 0.4,
     height: 0.55,
     y: 1.3,
     skipZRanges: [
-      [5.7, 7.3],
-      [3.2, 4.8],
-      [0.2, 1.8],
-      [-6.3, -4.7],
-      [-15.6, -14],
+      [8.55, 10.95],
+      [4.8, 7.2],
+      [0.3, 2.7],
+      [-9.45, -7.05],
+      [-23.4, -21],
     ],
   });
   const arrowTextures = [makeArrowSignTexture("right"), makeArrowSignTexture("left")];
   scatterWallDecor(group, halfWidthAt, arrowTextures, {
-    zFrom: 8.3,
-    zTo: -15,
-    step: 3.6,
+    zFrom: 12.45,
+    zTo: -22.5,
+    step: 5.4,
     width: 0.32,
     height: 0.16,
     y: 2.0,

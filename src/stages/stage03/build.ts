@@ -20,10 +20,10 @@ import {
 } from "../../three/EnvironmentManager";
 import { buildCorridorShell, addCorridorLights, buildDoorAndSign, scatterWallDecor } from "../shared/corridorBuilder";
 
-const Z_MIN = -17;
-const Z_MAX = 11;
-const SPAWN_Z = 8;
-const DOOR_Z = -16.4;
+const Z_MIN = -25.5;
+const Z_MAX = 16.5;
+const SPAWN_Z = 12;
+const DOOR_Z = -24.6;
 // 8番出口のような「一本道」を再現するため、通路幅は一定にする
 const HALF_WIDTH = 1.3;
 
@@ -118,17 +118,17 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
   group.name = "stage03";
 
   // --- 天井の蛍光灯 ---
-  const lightZs = [6, 3, 0, -3.5, -7.5, -11, -14.5];
+  const lightZs = [9, 4.5, 0, -5.25, -11.25, -16.5, -21.75];
   const lightEntries: CorridorLight[] = addCorridorLights(scene, lighting, lightZs);
-  const flickerLight = lightEntries[4]; // z = -7.5
+  const flickerLight = lightEntries[4]; // z = -11.25
 
   // --- 出口扉と看板 ---
   const signTexNormal = makeSignTexture("EXIT", "#ff2a2a");
   const { doorFrame, signPlane } = buildDoorAndSign(DOOR_Z, signTexNormal);
   group.add(doorFrame, signPlane);
 
-  // --- 下駄箱（START付近, z=6.3） ---
-  const SHOE_Z = 6.3;
+  // --- 下駄箱（START付近, z=9.45） ---
+  const SHOE_Z = 9.45;
   const shoeTexNormal = makeShoeCubbyTexture(false);
   const shoeTexAnomaly = makeShoeCubbyTexture(true);
   const shoeMat = new THREE.MeshBasicMaterial({ map: shoeTexNormal, toneMapped: false });
@@ -137,8 +137,8 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
   shoePlane.rotation.y = Math.PI / 2;
   group.add(shoePlane);
 
-  // --- 集合写真（反対側の壁, z=3.5） ---
-  const PORTRAIT_Z = 3.5;
+  // --- 集合写真（反対側の壁, z=5.25） ---
+  const PORTRAIT_Z = 5.25;
   const portraitTexNormal = makeClassPortraitTexture(false);
   const portraitTexAnomaly = makeClassPortraitTexture(true);
   const portraitMat = new THREE.MeshBasicMaterial({ map: portraitTexNormal, toneMapped: false });
@@ -147,8 +147,8 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
   portraitPlane.rotation.y = -Math.PI / 2;
   group.add(portraitPlane);
 
-  // --- ロッカー列（z=0.8） ---
-  const LOCKER_Z = 0.8;
+  // --- ロッカー列（z=1.2） ---
+  const LOCKER_Z = 1.2;
   const LOCKER_COUNT = 5;
   const lockerSlot = new THREE.Group();
   lockerSlot.position.set(-(halfWidthAt(LOCKER_Z) - 0.16), 0, LOCKER_Z + ((LOCKER_COUNT - 1) * 0.32) / 2);
@@ -160,8 +160,8 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
   }
   rebuildLockers(null);
 
-  // --- 教室の窓A（異変の主舞台, z=-2） ---
-  const WINDOW_A_Z = -2;
+  // --- 教室の窓A（異変の主舞台, z=-3） ---
+  const WINDOW_A_Z = -3;
   const windowA = buildClassroomWindow();
   windowA.group.position.set(halfWidthAt(WINDOW_A_Z) - 0.22, 1.35, WINDOW_A_Z);
   windowA.group.rotation.y = -Math.PI / 2;
@@ -170,8 +170,8 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
   const chalkboardMessageTex = makeChalkboardTexture("おかえり");
   let windowSilhouetteHiddenByProximity = false;
 
-  // --- 窓に映る影（z=-6） ---
-  const REFLECT_Z = -6;
+  // --- 窓に映る影（z=-9） ---
+  const REFLECT_Z = -9;
   const reflectHalfWidth = halfWidthAt(REFLECT_Z);
   const reflectFrame = new THREE.Mesh(
     new THREE.BoxGeometry(0.7, 1.1, 0.04),
@@ -201,14 +201,14 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
   reflectFigure.visible = false;
   group.add(reflectFigure);
 
-  // --- 放送スピーカー（天井, z=-11） ---
+  // --- 放送スピーカー（天井, z=-16.5） ---
   const speaker = buildNurseSpeaker();
-  speaker.position.set(0, 2.45, -11);
+  speaker.position.set(0, 2.45, -16.5);
   speaker.rotation.x = Math.PI / 2;
   group.add(speaker);
 
   // --- 教室の窓B（ボス異変専用, ドア手前 z=-14.8） ---
-  const WINDOW_B_Z = DOOR_Z + 1.6;
+  const WINDOW_B_Z = DOOR_Z + 2.4;
   const windowB = buildClassroomWindow();
   windowB.group.position.set(-(halfWidthAt(WINDOW_B_Z) - 0.22), 1.35, WINDOW_B_Z);
   windowB.group.rotation.y = Math.PI / 2;
@@ -218,41 +218,41 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
   // --- 壁沿いの掲示物（8番出口のように、毎回同じはずのものを並べて密度を作る） ---
   const noticeTextures = [0, 1, 2, 3].map((v) => makeSchoolNoticeTexture(v));
   scatterWallDecor(group, halfWidthAt, noticeTextures, {
-    zFrom: 7.3,
-    zTo: -15.8,
-    step: 2.1,
+    zFrom: 10.95,
+    zTo: -23.7,
+    step: 3.15,
     width: 0.4,
     height: 0.55,
     y: 1.3,
     skipZRanges: [
-      [5.7, 6.9],
-      [2.9, 4.1],
-      [-0.2, 1.9],
-      [-2.8, -1.2],
-      [-6.8, -5.2],
-      [-15.6, -14],
+      [8.55, 10.35],
+      [4.35, 6.15],
+      [-0.3, 2.85],
+      [-4.2, -1.8],
+      [-10.2, -7.8],
+      [-23.4, -21],
     ],
   });
   const arrowTextures = [makeArrowSignTexture("right"), makeArrowSignTexture("left")];
   scatterWallDecor(group, halfWidthAt, arrowTextures, {
-    zFrom: 8.3,
-    zTo: -16,
-    step: 3.6,
+    zFrom: 12.45,
+    zTo: -24,
+    step: 5.4,
     width: 0.32,
     height: 0.16,
     y: 2.0,
   });
   const classDoorTextures = ["1-A", "1-B", "1-C", "1-D"].map((t) => makeRoomNumberTexture(t, false));
   scatterWallDecor(group, halfWidthAt, classDoorTextures, {
-    zFrom: -3.6,
-    zTo: -13.6,
-    step: 2.8,
+    zFrom: -5.4,
+    zTo: -20.4,
+    step: 4.2,
     width: 0.28,
     height: 0.2,
     y: 1.0,
     skipZRanges: [
-      [-6.8, -5.2],
-      [-15.6, -14],
+      [-10.2, -7.8],
+      [-23.4, -21],
     ],
   });
 

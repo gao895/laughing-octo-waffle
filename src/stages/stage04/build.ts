@@ -22,10 +22,10 @@ import {
 } from "../../three/EnvironmentManager";
 import { buildCorridorShell, addCorridorLights, buildDoorAndSign, scatterWallDecor } from "../shared/corridorBuilder";
 
-const Z_MIN = -17;
-const Z_MAX = 11.5;
-const SPAWN_Z = 8.5;
-const DOOR_Z = -16.4;
+const Z_MIN = -25.5;
+const Z_MAX = 17.25;
+const SPAWN_Z = 12.75;
+const DOOR_Z = -24.6;
 // 8番出口のような「一本道」を再現するため、参道の幅は一定にする
 const HALF_WIDTH = 1.5;
 
@@ -60,7 +60,7 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
   group.name = "stage04";
 
   // --- 灯籠の明かり（天井灯の代わり） ---
-  const lightZs = [6, 1.5, -4, -7, -10, -14.5];
+  const lightZs = [9, 2.25, -6, -10.5, -15, -21.75];
   const lightEntries: CorridorLight[] = addCorridorLights(scene, lighting, lightZs, 2.4, 7, 0xffb86c);
 
   // --- 本殿入口（出口扉）と看板 ---
@@ -68,8 +68,8 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
   const { doorFrame, signPlane } = buildDoorAndSign(DOOR_Z, signTexNormal, 0x4a1c14);
   group.add(doorFrame, signPlane);
 
-  // --- 入口の鳥居（z=9.5） ---
-  const TORII_Z = 9.5;
+  // --- 入口の鳥居（z=14.25） ---
+  const TORII_Z = 14.25;
   const toriiSlot = new THREE.Group();
   toriiSlot.position.z = TORII_Z;
   group.add(toriiSlot);
@@ -81,16 +81,16 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
   }
   rebuildEntranceTorii(false);
 
-  // --- 石灯籠（左右一対, z=6） ---
-  const LANTERN_Z = 6;
+  // --- 石灯籠（左右一対, z=9） ---
+  const LANTERN_Z = 9;
   const lanternL: StoneLanternHandle = buildStoneLantern();
   lanternL.group.position.set(-(halfWidthAt(LANTERN_Z) - 0.3), 0, LANTERN_Z);
   const lanternR: StoneLanternHandle = buildStoneLantern();
   lanternR.group.position.set(halfWidthAt(LANTERN_Z) - 0.3, 0, LANTERN_Z);
   group.add(lanternL.group, lanternR.group);
 
-  // --- 絵馬掛け（z=4, 右壁） ---
-  const EMA_Z = 4;
+  // --- 絵馬掛け（z=6, 右壁） ---
+  const EMA_Z = 6;
   const emaTexNormal = makeEmaTexture("");
   const emaTexAnomaly = makeEmaTexture("かえりたい");
   const emaMat = new THREE.MeshBasicMaterial({ map: emaTexNormal, toneMapped: false });
@@ -107,8 +107,8 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
     group.add(deco);
   }
 
-  // --- 狛犬（左右一対, z=1.5） ---
-  const KOMAINU_Z = 1.5;
+  // --- 狛犬（左右一対, z=2.25） ---
+  const KOMAINU_Z = 2.25;
   const komainuL: KomainuHandle = buildKomainu(false);
   komainuL.group.position.set(-(halfWidthAt(KOMAINU_Z) - 0.35), 0, KOMAINU_Z);
   komainuL.group.rotation.y = Math.PI / 2;
@@ -117,16 +117,16 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
   komainuR.group.rotation.y = -Math.PI / 2;
   group.add(komainuL.group, komainuR.group);
 
-  // --- 手水舎（z=-1, 左壁） ---
-  const CHOZUYA_Z = -1;
+  // --- 手水舎（z=-1.5, 左壁） ---
+  const CHOZUYA_Z = -1.5;
   const chozuya = buildChozuya();
   chozuya.group.position.set(-(halfWidthAt(CHOZUYA_Z) - 0.55), 0, CHOZUYA_Z);
   group.add(chozuya.group);
   const waterColorNormal = chozuya.waterMat.color.clone();
   const waterColorAnomaly = new THREE.Color(0x5a1414);
 
-  // --- しめ縄ゲート（z=-4, 参道をまたぐ） ---
-  const SHIMENAWA_Z = -4;
+  // --- しめ縄ゲート（z=-6, 参道をまたぐ） ---
+  const SHIMENAWA_Z = -6;
   const shimenawaSlot = new THREE.Group();
   shimenawaSlot.position.set(0, 2.1, SHIMENAWA_Z);
   group.add(shimenawaSlot);
@@ -136,8 +136,8 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
   }
   rebuildShimenawa(SHIDE_DEFAULT_COUNT);
 
-  // --- 石段（装飾, z=-7, 右脇） ---
-  const STEPS_Z = -7;
+  // --- 石段（装飾, z=-10.5, 右脇） ---
+  const STEPS_Z = -10.5;
   const stepsSlot = new THREE.Group();
   stepsSlot.position.set(halfWidthAt(STEPS_Z) - 0.3, 0, STEPS_Z + 0.4);
   stepsSlot.rotation.y = -Math.PI / 2;
@@ -148,8 +148,8 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
   }
   rebuildSteps(STEPS_DEFAULT_COUNT);
 
-  // --- 鈴（本殿手前, z=-10.5） ---
-  const BELL_Z = -10.5;
+  // --- 鈴（本殿手前, z=-15.75） ---
+  const BELL_Z = -15.75;
   const bellGroup = new THREE.Group();
   const bellRopePivot = new THREE.Object3D();
   const bellRope = new THREE.Mesh(
@@ -169,7 +169,7 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
   group.add(bellGroup);
 
   // --- 最終鳥居とボスの顔のない人影（本殿手前, z=-14.8） ---
-  const FINAL_TORII_Z = DOOR_Z + 1.6;
+  const FINAL_TORII_Z = DOOR_Z + 2.4;
   const finalTorii = buildToriiGate(2.4, 2.6);
   finalTorii.position.set(0, 0, FINAL_TORII_Z);
   group.add(finalTorii);
@@ -181,27 +181,27 @@ export function buildStage04(scene: THREE.Scene, lighting: LightingManager, audi
   // --- 参道沿いの案内札（8番出口のように、毎回同じはずのものを並べて密度を作る） ---
   const noticeTextures = [0, 1, 2, 3].map((v) => makeShrineNoticeTexture(v));
   scatterWallDecor(group, halfWidthAt, noticeTextures, {
-    zFrom: 7.3,
-    zTo: -16,
-    step: 2.3,
+    zFrom: 10.95,
+    zTo: -24,
+    step: 3.45,
     width: 0.38,
     height: 0.55,
     y: 1.1,
     skipZRanges: [
-      [5.4, 6.6],
-      [0.9, 2.1],
-      [-1.6, -0.4],
-      [-4.6, -3.4],
-      [-7.6, -6.4],
-      [-11.1, -9.9],
-      [-15.6, -14],
+      [8.1, 9.9],
+      [1.35, 3.15],
+      [-2.4, -0.6],
+      [-6.9, -5.1],
+      [-11.4, -9.6],
+      [-16.65, -14.85],
+      [-23.4, -21],
     ],
   });
   const arrowTextures = [makeArrowSignTexture("right"), makeArrowSignTexture("left")];
   scatterWallDecor(group, halfWidthAt, arrowTextures, {
-    zFrom: 8,
-    zTo: -16.2,
-    step: 3.8,
+    zFrom: 12,
+    zTo: -24.3,
+    step: 5.7,
     width: 0.3,
     height: 0.15,
     y: 1.9,
