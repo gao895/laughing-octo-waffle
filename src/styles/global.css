@@ -200,14 +200,6 @@ body,
   pointer-events: none;
 }
 
-.hud-turn-fade {
-  position: absolute;
-  inset: 0;
-  background: #000;
-  opacity: 0;
-  will-change: opacity;
-}
-
 .hud-dot {
   position: absolute;
   left: 50%;

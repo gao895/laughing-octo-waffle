@@ -35,18 +35,6 @@ export class PlayerController {
   private dashCooldownTimer = 0;
   private footstepDistance = 0;
 
-  // 「曲がり角を曲がってシームレスにループする」演出用の状態。
-  // 通常のinput処理は止め、視点だけを自動で振って角を向かせ、
-  // 画面が最も暗くなった一瞬の裏でposition/yawを入れ替える。
-  private transition: {
-    elapsed: number;
-    duration: number;
-    fromYaw: number;
-    turnDelta: number;
-    swapped: boolean;
-    onSwap: () => void;
-  } | null = null;
-
   // スマートフォン向け仮想入力（仮想スティック・ドラッグ視点・ダッシュボタン）
   private virtualMoveX = 0;
   private virtualMoveZ = 0;
@@ -147,59 +135,6 @@ export class PlayerController {
 
   resetKeys() {
     this.keys.clear();
-  }
-
-  /**
-   * 曲がり角を曲がる演出を開始する。durationの半分で最大回頭角に達し、
-   * その瞬間にonSwapを呼んで座標を入れ替え、残り半分で正面向きまで戻す。
-   */
-  startTurnTransition(duration: number, turnDeltaRad: number, onSwap: () => void) {
-    this.transition = {
-      elapsed: 0,
-      duration,
-      fromYaw: this.yaw,
-      turnDelta: turnDeltaRad,
-      swapped: false,
-      onSwap,
-    };
-  }
-
-  get isTransitioning(): boolean {
-    return this.transition !== null;
-  }
-
-  /** 画面を一瞬だけ暗くする演出用の係数（0=通常、1=曲がりきった瞬間） */
-  get transitionDarkness(): number {
-    if (!this.transition) return 0;
-    const t = Math.min(1, this.transition.elapsed / this.transition.duration);
-    return Math.sin(Math.PI * t);
-  }
-
-  /** 通常のupdate()の代わりに、曲がり角演出中のみ毎フレーム呼ぶ */
-  updateTransition(dt: number) {
-    const tr = this.transition;
-    if (!tr) return;
-    tr.elapsed += dt;
-    const t = Math.min(1, tr.elapsed / tr.duration);
-
-    let displayYaw: number;
-    if (t <= 0.5) {
-      displayYaw = tr.fromYaw + tr.turnDelta * (t / 0.5);
-    } else {
-      if (!tr.swapped) {
-        tr.swapped = true;
-        tr.onSwap();
-      }
-      displayYaw = this.yaw + tr.turnDelta * (1 - (t - 0.5) / 0.5);
-    }
-
-    this.cameraManager.camera.position.set(this.position.x, 1.65, this.position.z);
-    this.cameraManager.camera.rotation.set(this.pitch, displayYaw, 0, "YXZ");
-    this.cameraManager.update(dt);
-
-    if (t >= 1) {
-      this.transition = null;
-    }
   }
 
   /** 見た目上のカメラのXZ平面での前方向 */
