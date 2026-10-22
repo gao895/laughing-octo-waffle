@@ -79,6 +79,10 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
   routeMapPlane.position.set(-(halfWidthAt(ROUTE_MAP_Z) - 0.03), 1.85, ROUTE_MAP_Z);
   routeMapPlane.rotation.y = Math.PI / 2;
   group.add(routeMapPlane);
+  const routeMapWindow = buildTrainWindow(0.55, 0.42);
+  routeMapWindow.group.position.set(-(halfWidthAt(ROUTE_MAP_Z) - 0.01), 1.5, ROUTE_MAP_Z);
+  routeMapWindow.group.rotation.y = Math.PI / 2;
+  group.add(routeMapWindow.group);
 
   // --- 車内広告（z=3, 右壁） ---
   const AD_Z = 3;
@@ -89,6 +93,10 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
   adPlane.position.set(halfWidthAt(AD_Z) - 0.03, 1.85, AD_Z);
   adPlane.rotation.y = -Math.PI / 2;
   group.add(adPlane);
+  const adWindow = buildTrainWindow(0.55, 0.42);
+  adWindow.group.position.set(halfWidthAt(AD_Z) - 0.01, 1.5, AD_Z);
+  adWindow.group.rotation.y = -Math.PI / 2;
+  group.add(adWindow.group);
 
   // --- 非常停止ボタン（z=0, 左壁） ---
   const BUTTON_Z = 0;
@@ -110,6 +118,10 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
   prioritySignPlane.position.set(halfWidthAt(PRIORITY_Z) - 0.03, 1.75, PRIORITY_Z);
   prioritySignPlane.rotation.y = -Math.PI / 2;
   group.add(prioritySignPlane);
+  const priorityWindow = buildTrainWindow(0.55, 0.42);
+  priorityWindow.group.position.set(halfWidthAt(PRIORITY_Z) - 0.01, 1.5, PRIORITY_Z);
+  priorityWindow.group.rotation.y = -Math.PI / 2;
+  group.add(priorityWindow.group);
 
   // --- 乗客が増える座席（z=-6, 左壁） ---
   const PASSENGER_SEAT_Z = -6;
@@ -123,6 +135,10 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
   extraPassenger.rotation.y = -Math.PI / 2;
   extraPassenger.visible = false;
   group.add(extraPassenger);
+  const passengerWindow = buildTrainWindow(0.55, 0.42);
+  passengerWindow.group.position.set(-(halfWidthAt(PASSENGER_SEAT_Z) - 0.01), 1.5, PASSENGER_SEAT_Z);
+  passengerWindow.group.rotation.y = Math.PI / 2;
+  group.add(passengerWindow.group);
 
   // --- 車窓（外に人影, z=-9, 右壁） ---
   const WINDOW_FIGURE_Z = -9;
@@ -174,19 +190,24 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
     if (!skipped) {
       const hw = halfWidthAt(z);
       const bench = buildTrainSeatBench(0.9);
+      const window = buildTrainWindow(0.55, 0.42);
       if (seatSide === 1) {
         bench.position.set(hw - 0.22, 0, z);
         bench.rotation.y = -Math.PI / 2;
+        window.group.position.set(hw - 0.01, 1.5, z);
+        window.group.rotation.y = -Math.PI / 2;
       } else {
         bench.position.set(-(hw - 0.22), 0, z);
         bench.rotation.y = Math.PI / 2;
+        window.group.position.set(-(hw - 0.01), 1.5, z);
+        window.group.rotation.y = Math.PI / 2;
       }
-      group.add(bench);
+      group.add(bench, window.group);
     }
     seatSide = seatSide === 1 ? -1 : 1;
   }
 
-  // --- 参道...ではなく車内沿いの案内矢印（8番出口のように密度を作る） ---
+  // --- 車内沿いの案内矢印（8番出口のように密度を作る） ---
   const arrowTextures = [makeArrowSignTexture("right"), makeArrowSignTexture("left")];
   scatterWallDecor(group, halfWidthAt, arrowTextures, {
     zFrom: 12.45,
