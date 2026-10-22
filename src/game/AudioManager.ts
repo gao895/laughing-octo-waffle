@@ -242,32 +242,6 @@ export class AudioManager {
     osc.stop(now + 0.5);
   }
 
-  /** 異変が発生しているループの開始時に鳴らす、不協和な音程を重ねた不気味なチャイム */
-  playAnomalyChime() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    // 短2度(C6/C#6)の不協和音＋トライトーン(F#6)をずらして重ね、オルゴールが
-    // 狂ったような違和感を出す。足音等のSEと混ざらないよう長めにゆっくり減衰させる。
-    const notes: { freq: number; delay: number; peak: number; decay: number }[] = [
-      { freq: 1046.5, delay: 0, peak: 0.16, decay: 2.4 },
-      { freq: 1108.73, delay: 0.08, peak: 0.12, decay: 2.2 },
-      { freq: 1479.98, delay: 0.3, peak: 0.1, decay: 1.8 },
-    ];
-    for (const note of notes) {
-      const t = now + note.delay;
-      const osc = this.ctx.createOscillator();
-      osc.type = "sine";
-      osc.frequency.value = note.freq;
-      const gain = this.ctx.createGain();
-      gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.linearRampToValueAtTime(note.peak, t + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + note.decay);
-      osc.connect(gain).connect(this.seGain);
-      osc.start(t);
-      osc.stop(t + note.decay + 0.1);
-    }
-  }
-
   playCorrectChime() {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;

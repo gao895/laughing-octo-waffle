@@ -140,8 +140,7 @@ export class GameManager {
     this.anomalyManager.reset();
 
     this.placeAtSpawn();
-    const firstAnomaly = this.anomalyManager.rollForLoop(stageId, this.loopManager.loopIndex, runtime, false);
-    if (firstAnomaly) this.audioManager.playAnomalyChime();
+    this.anomalyManager.rollForLoop(stageId, this.loopManager.loopIndex, runtime, false);
 
     this.callbacks.onStageLabel?.(stageId, config.name, config.subtitle);
     this.saveManager.setReachedStage(stageId);
@@ -284,13 +283,12 @@ export class GameManager {
       // 次のループへ
       this.placeAtSpawn();
       const runtime = this.stageManager.current!;
-      const nextAnomaly = this.anomalyManager.rollForLoop(
+      this.anomalyManager.rollForLoop(
         this.currentStageId,
         this.loopManager!.loopIndex,
         runtime,
         this.loopManager!.isFinalLoop()
       );
-      if (nextAnomaly) this.audioManager.playAnomalyChime();
     }, JUDGEMENT_LOCK_SEC * 1000);
   }
 
