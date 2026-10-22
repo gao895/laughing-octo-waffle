@@ -92,3 +92,58 @@ export function gaussianBump(z: number, center: number, sigma: number, amp: numb
   const d = z - center;
   return amp * Math.exp(-(d * d) / (2 * sigma * sigma));
 }
+
+export interface WallDecorParams {
+  /** 開始Z座標（通常はスポーン寄りの大きい値） */
+  zFrom: number;
+  /** 終了Z座標（通常は扉寄りの小さい値） */
+  zTo: number;
+  step: number;
+  width: number;
+  height: number;
+  y: number;
+  /** 壁からの余白。既定0.03（ほぼ壁に貼り付く） */
+  margin?: number;
+  /** この範囲(両端含む)は固有の小道具があるため配置をスキップする */
+  skipZRanges?: [number, number][];
+}
+
+/**
+ * 通路の壁沿いに同じようなポスター/掲示物を繰り返し配置する。
+ * 8番出口のように「毎回同じはずのもの」で画面を満たし、
+ * 異変（違い）を見比べる密度を作るための共通ヘルパー。
+ * textures配列を周回しながら左右交互に貼っていく。
+ */
+export function scatterWallDecor(
+  group: THREE.Group,
+  halfWidthAt: (z: number) => number,
+  textures: THREE.Texture[],
+  params: WallDecorParams
+): THREE.Mesh[] {
+  const margin = params.margin ?? 0.03;
+  const meshes: THREE.Mesh[] = [];
+  let side: 1 | -1 = 1;
+  let texIndex = 0;
+
+  for (let z = params.zFrom; z >= params.zTo; z -= params.step) {
+    const skipped = (params.skipZRanges ?? []).some(([lo, hi]) => z >= lo && z <= hi);
+    if (!skipped) {
+      const hw = halfWidthAt(z);
+      const mat = new THREE.MeshBasicMaterial({ map: textures[texIndex % textures.length], toneMapped: false });
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(params.width, params.height), mat);
+      if (side === 1) {
+        mesh.position.set(hw - margin, params.y, z);
+        mesh.rotation.y = -Math.PI / 2;
+      } else {
+        mesh.position.set(-(hw - margin), params.y, z);
+        mesh.rotation.y = Math.PI / 2;
+      }
+      group.add(mesh);
+      meshes.push(mesh);
+      texIndex += 1;
+    }
+    side = side === 1 ? -1 : 1;
+  }
+
+  return meshes;
+}

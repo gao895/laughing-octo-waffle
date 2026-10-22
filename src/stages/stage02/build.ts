@@ -11,6 +11,8 @@ import {
   makeChartTexture,
   makeECGTexture,
   makePatientFaceTexture,
+  makeHospitalNoticeTexture,
+  makeArrowSignTexture,
   buildPatientFigure,
   buildNurseFigure,
   buildPatientBed,
@@ -18,7 +20,7 @@ import {
   buildIVPole,
   buildNurseSpeaker,
 } from "../../three/EnvironmentManager";
-import { buildCorridorShell, addCorridorLights, buildDoorAndSign } from "../shared/corridorBuilder";
+import { buildCorridorShell, addCorridorLights, buildDoorAndSign, scatterWallDecor } from "../shared/corridorBuilder";
 
 const Z_MIN = -16.6;
 const Z_MAX = 11;
@@ -166,6 +168,35 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
   let operatingLightOn = false;
   let bossFlashActive = false;
 
+  // --- 壁沿いの掲示物（8番出口のように、毎回同じはずのものを並べて密度を作る） ---
+  const noticeTextures = [0, 1, 2, 3].map((v) => makeHospitalNoticeTexture(v));
+  scatterWallDecor(group, halfWidthAt, noticeTextures, {
+    zFrom: 7.5,
+    zTo: -14,
+    step: 2.2,
+    width: 0.38,
+    height: 0.52,
+    y: 1.3,
+    skipZRanges: [
+      [2.9, 5.8],
+      [0.1, 2.3],
+      [-3.8, -2.2],
+      [-8.5, -7.5],
+      [-10.6, -9.4],
+      [-15.6, -14],
+    ],
+  });
+  const arrowTextures = [makeArrowSignTexture("right"), makeArrowSignTexture("left")];
+  scatterWallDecor(group, halfWidthAt, arrowTextures, {
+    zFrom: 6.8,
+    zTo: -15,
+    step: 3.4,
+    width: 0.3,
+    height: 0.15,
+    y: 2.0,
+    skipZRanges: [[-7.2, -4.3]],
+  });
+
   // --- 状態管理 ---
   let heartbeatActive = false;
   let heartbeatTimer = 0;
@@ -304,6 +335,8 @@ export function buildStage02(scene: THREE.Scene, lighting: LightingManager, audi
       ecgTexSpiky.dispose();
       roomNumTexNormal.dispose();
       roomNumTexGlitch.dispose();
+      for (const t of noticeTextures) t.dispose();
+      for (const t of arrowTextures) t.dispose();
     },
   };
 

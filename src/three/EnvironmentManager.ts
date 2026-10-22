@@ -99,6 +99,91 @@ export function makeSignTexture(text: string, color = "#ff2a2a"): THREE.CanvasTe
   return tex;
 }
 
+/**
+ * 廊下に繰り返し貼る注意書き風の掲示物。variantで数パターン用意し、
+ * 「毎回同じはずのもの」が並ぶことで、異変（違い）に気づきやすい密度を作る。
+ */
+export function makeNoticePosterTexture(variant: number): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 176);
+  ctx.fillStyle = "#e8e4d4";
+  ctx.fillRect(0, 0, 128, 176);
+  ctx.strokeStyle = "#8a8672";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(2, 2, 124, 172);
+
+  const texts: [string, string][] = [
+    ["注意", "足元にご注意ください"],
+    ["火気厳禁", "この先火気の使用を禁じます"],
+    ["非常灯", "停電時は非常灯が点灯します"],
+    ["案内", "係員にお尋ねください"],
+  ];
+  const [title, body] = texts[variant % texts.length];
+
+  ctx.fillStyle = "#1c1a14";
+  ctx.font = "bold 20px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(title, 64, 34);
+
+  ctx.strokeStyle = "#a01010";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(64, 46);
+  ctx.lineTo(44, 84);
+  ctx.lineTo(84, 84);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.fillStyle = "#a01010";
+  ctx.font = "bold 24px sans-serif";
+  ctx.fillText("!", 64, 76);
+
+  ctx.fillStyle = "#3a382e";
+  ctx.font = "11px sans-serif";
+  const words = body.split("");
+  let line = "";
+  let y = 112;
+  for (const ch of words) {
+    line += ch;
+    if (line.length >= 8) {
+      ctx.fillText(line, 64, y);
+      line = "";
+      y += 16;
+    }
+  }
+  if (line) ctx.fillText(line, 64, y);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 廊下の方向案内サイン（矢印）。純粋な背景装飾として繰り返し配置する */
+export function makeArrowSignTexture(direction: "left" | "right" = "right"): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(160, 80);
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(0, 0, 160, 80);
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(2, 2, 156, 76);
+  ctx.fillStyle = "#39d97a";
+  ctx.save();
+  ctx.translate(80, 40);
+  if (direction === "left") ctx.scale(-1, 1);
+  ctx.beginPath();
+  ctx.moveTo(-40, 0);
+  ctx.lineTo(10, -22);
+  ctx.lineTo(10, -8);
+  ctx.lineTo(40, -8);
+  ctx.lineTo(40, 8);
+  ctx.lineTo(10, 8);
+  ctx.lineTo(10, 22);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 /** ポスター：シンプルな人物シルエット風の絵。hueShiftで異変時に色を変える */
 export function makePosterTexture(hueShift = 0): THREE.CanvasTexture {
   const { canvas, ctx } = createCanvas(128, 192);
@@ -315,6 +400,59 @@ export function makeHospitalFloorTexture(): THREE.CanvasTexture {
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(4, 12);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/**
+ * 病院の廊下に繰り返し貼る衛生・案内掲示。variantで数パターン用意し、
+ * 「いつも同じはずの掲示物」の密度を上げて見比べる楽しさを作る。
+ */
+export function makeHospitalNoticeTexture(variant: number): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 176);
+  ctx.fillStyle = "#f2f3ee";
+  ctx.fillRect(0, 0, 128, 176);
+  ctx.strokeStyle = "#9aa39a";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(2, 2, 124, 172);
+
+  const items: [string, string][] = [
+    ["手指消毒", "入室前に消毒をお願いします"],
+    ["面会時間", "平日 15:00〜19:00"],
+    ["静粛に", "院内ではお静かに願います"],
+    ["携帯電話", "使用禁止エリアです"],
+  ];
+  const [title, body] = items[variant % items.length];
+
+  ctx.fillStyle = "#1c2a24";
+  ctx.font = "bold 18px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(title, 64, 32);
+
+  ctx.strokeStyle = "#2e7d5e";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(64, 68, 20, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = "#2e7d5e";
+  ctx.font = "bold 22px sans-serif";
+  ctx.fillText("+", 64, 70);
+
+  ctx.fillStyle = "#3a4440";
+  ctx.font = "10px sans-serif";
+  let line = "";
+  let y = 108;
+  for (const ch of body) {
+    line += ch;
+    if (line.length >= 9) {
+      ctx.fillText(line, 64, y);
+      line = "";
+      y += 15;
+    }
+  }
+  if (line) ctx.fillText(line, 64, y);
+
+  const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
