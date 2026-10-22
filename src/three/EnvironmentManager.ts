@@ -905,6 +905,66 @@ export function buildDeskRow(count: number): THREE.Group {
   return group;
 }
 
+export interface SchoolDoorHandle {
+  group: THREE.Group;
+  plateMat: THREE.MeshBasicMaterial;
+}
+
+/**
+ * 教室の引き戸一式（アルミ枠+ワイヤー入りガラス窓+腰板+取っ手+クラス表示）。
+ * 単なる番号プレートではなく実際の引き戸の形を持たせ、廊下らしいリアリティを出す。
+ */
+export function buildSchoolDoorPanel(numberTex: THREE.Texture): SchoolDoorHandle {
+  const group = new THREE.Group();
+
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x8a8a82, roughness: 0.4, metalness: 0.6 });
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(0.68, 2.0, 0.05), frameMat);
+  group.add(frame);
+
+  const doorMat = new THREE.MeshStandardMaterial({ color: 0xc9c4b0, roughness: 0.5 });
+  const door = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.9, 0.03), doorMat);
+  door.position.z = 0.012;
+  group.add(door);
+
+  // 上部のワイヤー入り磨りガラス窓
+  const glassMat = new THREE.MeshStandardMaterial({
+    color: 0xaebfc2,
+    roughness: 0.4,
+    metalness: 0.1,
+    transparent: true,
+    opacity: 0.55,
+  });
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 1.1), glassMat);
+  glass.position.set(0, 0.35, 0.03);
+  group.add(glass);
+  const wireMat = new THREE.MeshStandardMaterial({ color: 0x6a6a62, roughness: 0.5 });
+  const wireH = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.01, 0.005), wireMat);
+  wireH.position.set(0, 0.35, 0.035);
+  const wireV = new THREE.Mesh(new THREE.BoxGeometry(0.01, 1.1, 0.005), wireMat);
+  wireV.position.set(0, 0.35, 0.035);
+  group.add(wireH, wireV);
+
+  // 下部の腰板
+  const lowerPanelMat = new THREE.MeshStandardMaterial({ color: 0xb8b2a0, roughness: 0.6 });
+  const lowerPanel = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.015), lowerPanelMat);
+  lowerPanel.position.set(0, -0.62, 0.03);
+  group.add(lowerPanel);
+
+  // 引き戸の掘り込み取っ手
+  const handleMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.3, metalness: 0.7 });
+  const handle = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.22, 0.02), handleMat);
+  handle.position.set(0.24, -0.3, 0.04);
+  group.add(handle);
+
+  // クラス表示プレート
+  const plateMat = new THREE.MeshBasicMaterial({ map: numberTex, toneMapped: false });
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.13), plateMat);
+  plate.position.set(0, 0.92, 0.035);
+  group.add(plate);
+
+  return { group, plateMat };
+}
+
 // ============================================================
 // STAGE04「夜神社」用テクスチャ・小道具
 // ============================================================

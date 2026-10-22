@@ -17,6 +17,7 @@ import {
   buildDeskRow,
   buildStudentFigure,
   buildNurseSpeaker,
+  buildSchoolDoorPanel,
 } from "../../three/EnvironmentManager";
 import { buildCorridorShell, addCorridorLights, buildDoorAndSign, scatterWallDecor } from "../shared/corridorBuilder";
 
@@ -247,19 +248,32 @@ export function buildStage03(scene: THREE.Scene, lighting: LightingManager, audi
     height: 0.2,
     y: 2.0,
   });
+  // 番号だけのプレートではなく、実際の引き戸の形（枠+ガラス窓+腰板+取っ手）を持たせる。
   const classDoorTextures = ["1-A", "1-B", "1-C", "1-D"].map((t) => makeRoomNumberTexture(t, false));
-  scatterWallDecor(group, halfWidthAt, classDoorTextures, {
-    zFrom: -5.4,
-    zTo: -20.4,
-    step: 4.2,
-    width: 0.35,
-    height: 0.25,
-    y: 1.0,
-    skipZRanges: [
-      [-10.2, -7.8],
-      [-23.4, -21],
-    ],
-  });
+  const classDoorSkipZRanges: [number, number][] = [
+    [-10.2, -7.8],
+    [-23.4, -21],
+  ];
+  let classDoorSide: 1 | -1 = 1;
+  let classDoorTexIndex = 0;
+  for (let z = -5.4; z >= -20.4; z -= 4.2) {
+    const skipped = classDoorSkipZRanges.some(([lo, hi]) => z >= lo && z <= hi);
+    if (!skipped) {
+      const hw = halfWidthAt(z);
+      const doorHandle = buildSchoolDoorPanel(classDoorTextures[classDoorTexIndex % classDoorTextures.length]);
+      if (classDoorSide === 1) {
+        doorHandle.group.position.set(hw - 0.03, 1.0, z);
+        doorHandle.group.rotation.y = -Math.PI / 2;
+      } else {
+        doorHandle.group.position.set(-(hw - 0.03), 1.0, z);
+        doorHandle.group.rotation.y = Math.PI / 2;
+      }
+      doorHandle.group.scale.setScalar(1.25);
+      group.add(doorHandle.group);
+      classDoorTexIndex += 1;
+    }
+    classDoorSide = classDoorSide === 1 ? -1 : 1;
+  }
 
   // --- 状態管理 ---
   let heartbeatTimer = 0;
