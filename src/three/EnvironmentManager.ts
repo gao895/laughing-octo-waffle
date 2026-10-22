@@ -1961,6 +1961,100 @@ export function makeParkFenceTexture(): THREE.CanvasTexture {
   return tex;
 }
 
+/** 錆びたトタン板のテクスチャ（骨組みフェンスに残る波板の破片用） */
+export function makeRustMetalTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 128);
+  noiseFill(ctx, 128, 128, "#7a6248", 14);
+  for (let i = 0; i < 26; i++) {
+    const x = Math.random() * 128;
+    const y = Math.random() * 128;
+    const r = 4 + Math.random() * 14;
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+    grad.addColorStop(0, "rgba(190,95,40,0.65)");
+    grad.addColorStop(1, "rgba(190,95,40,0)");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.strokeStyle = "rgba(10,8,6,0.4)";
+  ctx.lineWidth = 2;
+  for (let x = 0; x <= 128; x += 8) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 128);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "rgba(0,0,0,0.85)";
+  for (let i = 0; i < 4; i++) {
+    const x = Math.random() * 128;
+    const y = Math.random() * 128;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 4 + Math.random() * 7, 3 + Math.random() * 5, Math.random() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/**
+ * 骨組みだけの錆びたフェンス。支柱+横桟+斜めブレースのみで構成し、
+ * 波板は一部だけ残して大半は欠落させることで、隙間から奥の暗闇が見える
+ * 廃墟らしい見た目にする。ローカルZ方向に伸び、呼び出し側で位置/回転を設定する。
+ */
+export function buildRustedFenceWall(length: number, height: number, rustTex: THREE.Texture): THREE.Group {
+  const group = new THREE.Group();
+  // 暗い通路でも骨組みだと視認できるよう、やや明るめの錆色+高めの金属感にする
+  const rustMat = new THREE.MeshStandardMaterial({ color: 0x9a7a54, roughness: 0.6, metalness: 0.6 });
+  const rustMatDark = new THREE.MeshStandardMaterial({ color: 0x6a5038, roughness: 0.65, metalness: 0.55 });
+  rustTex.wrapS = rustTex.wrapT = THREE.RepeatWrapping;
+  rustTex.repeat.set(1.5, 1.5);
+  const panelMat = new THREE.MeshStandardMaterial({ map: rustTex, roughness: 0.7, metalness: 0.4, side: THREE.DoubleSide });
+
+  const postSpacing = 1.5;
+  const postCount = Math.max(2, Math.round(length / postSpacing) + 1);
+  const postGeo = new THREE.CylinderGeometry(0.05, 0.055, height, 8);
+  for (let i = 0; i < postCount; i++) {
+    const z = -length / 2 + (i / (postCount - 1)) * length;
+    const post = new THREE.Mesh(postGeo, i % 3 === 0 ? rustMatDark : rustMat);
+    post.position.set(0, height / 2, z);
+    if (i % 7 === 3) post.rotation.z = 0.05;
+    group.add(post);
+  }
+
+  const railGeo = new THREE.CylinderGeometry(0.03, 0.03, length, 6);
+  for (const ry of [height * 0.22, height * 0.52, height * 0.85]) {
+    const rail = new THREE.Mesh(railGeo, rustMat);
+    rail.rotation.z = Math.PI / 2;
+    rail.position.set(0, ry, 0);
+    group.add(rail);
+  }
+
+  const braceGeo = new THREE.CylinderGeometry(0.022, 0.022, height * 0.8, 6);
+  for (let i = 1; i < postCount - 1; i += 3) {
+    const z = -length / 2 + (i / (postCount - 1)) * length;
+    const brace = new THREE.Mesh(braceGeo, rustMatDark);
+    brace.position.set(0, height * 0.42, z);
+    brace.rotation.z = 0.85;
+    group.add(brace);
+  }
+
+  // 波板は半分以上を欠落させ、残った破片だけ丈もまちまちに取り付ける
+  const segLen = length / (postCount - 1);
+  for (let i = 0; i < postCount - 1; i++) {
+    if (i % 5 === 1 || i % 5 === 2) continue;
+    const z0 = -length / 2 + (i / (postCount - 1)) * length;
+    const panelH = height * (i % 2 === 0 ? 0.55 : 0.34);
+    const panel = new THREE.Mesh(new THREE.PlaneGeometry(segLen * 0.92, panelH), panelMat);
+    panel.position.set(0.015, panelH / 2 + 0.04, z0 + segLen / 2);
+    group.add(panel);
+  }
+
+  return group;
+}
+
 /** 園内に繰り返し立つ注意書き/アトラクション案内の立て看板 */
 export function makeParkNoticeTexture(variant: number): THREE.CanvasTexture {
   const { canvas, ctx } = createCanvas(128, 176);

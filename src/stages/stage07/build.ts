@@ -4,7 +4,6 @@ import { LightingManager, type CorridorLight } from "../../three/LightingManager
 import type { AudioManager } from "../../game/AudioManager";
 import {
   makeParkPathTexture,
-  makeParkFenceTexture,
   makeNightSkyTexture,
   makeSignTexture,
   makeParkNoticeTexture,
@@ -15,6 +14,7 @@ import {
   makeMascotFaceTexture,
   makeWoodPlankTexture,
   makeShutterTexture,
+  makeRustMetalTexture,
   buildTicketBooth,
   buildCarousel,
   buildCutoutBoard,
@@ -22,6 +22,7 @@ import {
   buildBalloonCart,
   buildFerrisWheel,
   buildMascotCostumeFigure,
+  buildRustedFenceWall,
   type CarouselHandle,
   type CutoutBoardHandle,
   type MascotStatueHandle,
@@ -52,12 +53,11 @@ const REVERSE_HORSE_INDEX = 1;
 export function buildStage07(scene: THREE.Scene, lighting: LightingManager, audio: AudioManager): StageRuntime {
   // --- マテリアル/テクスチャ ---
   const pathTex = makeParkPathTexture();
-  const fenceTex = makeParkFenceTexture();
-  fenceTex.repeat.set(1, 2);
   const skyTex = makeNightSkyTexture();
 
   const pathMat = new THREE.MeshStandardMaterial({ map: pathTex, roughness: 0.95, metalness: 0 });
-  const fenceMat = new THREE.MeshStandardMaterial({ map: fenceTex, roughness: 0.9 });
+  // 壁本体は骨組みフェンスに置き換えるため不可視にし、構造上の境界(衝突判定用)としてのみ残す
+  const invisibleWallMat = new THREE.MeshStandardMaterial({ transparent: true, opacity: 0, depthWrite: false });
   const skyMat = new THREE.MeshStandardMaterial({ map: skyTex, roughness: 1, emissive: 0x08080c, emissiveIntensity: 0.6 });
 
   // --- 園内通路本体（屋外のため天井は高く夜空として扱う） ---
@@ -65,16 +65,27 @@ export function buildStage07(scene: THREE.Scene, lighting: LightingManager, audi
     zMin: Z_MIN,
     zMax: Z_MAX,
     halfWidthAt,
-    wallMat: fenceMat,
+    wallMat: invisibleWallMat,
     floorMat: pathMat,
     ceilMat: skyMat,
     ceilingHeight: 6,
   });
   group.name = "stage07";
 
+  // --- 錆びた骨組みだけのフェンス（壁の代わり。隙間から奥の暗闇が見える） ---
+  const FENCE_LENGTH = Z_MAX - Z_MIN;
+  const FENCE_CENTER_Z = (Z_MAX + Z_MIN) / 2;
+  const FENCE_HEIGHT = 2.5;
+  const rustTex = makeRustMetalTexture();
+  const fenceRight = buildRustedFenceWall(FENCE_LENGTH, FENCE_HEIGHT, rustTex);
+  fenceRight.position.set(HALF_WIDTH, 0, FENCE_CENTER_Z);
+  const fenceLeft = buildRustedFenceWall(FENCE_LENGTH, FENCE_HEIGHT, rustTex);
+  fenceLeft.position.set(-HALF_WIDTH, 0, FENCE_CENTER_Z);
+  group.add(fenceRight, fenceLeft);
+
   // --- 園内灯（ぼんやりと暖色の裸電球） ---
   const lightZs = [12, 6, 0, -6, -12, -18, -24];
-  const lightEntries: CorridorLight[] = addCorridorLights(scene, lighting, lightZs, 2.6, 6.5, 0xffb347);
+  const lightEntries: CorridorLight[] = addCorridorLights(scene, lighting, lightZs, 2.6, 7.5, 0xffb347);
 
   // --- 出口ゲートと看板 ---
   const signTexNormal = makeSignTexture("EXIT", "#ff2a2a");
@@ -311,7 +322,7 @@ export function buildStage07(scene: THREE.Scene, lighting: LightingManager, audi
 
     dispose() {
       pathTex.dispose();
-      fenceTex.dispose();
+      rustTex.dispose();
       skyTex.dispose();
       signTexNormal.dispose();
       archSignTex.dispose();
