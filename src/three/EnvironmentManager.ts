@@ -3255,3 +3255,356 @@ const VILLAGER_COLORS: HumanoidColors = { skin: 0xc9b9a3, outfit: 0x3a4436, legs
 export function buildVillagerFigure(): THREE.Group {
   return buildHumanoidFigure(VILLAGER_COLORS);
 }
+
+// ============================================================
+// STAGE09「自宅」用テクスチャ・小道具
+// ============================================================
+
+export function makeHomeWallTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 128);
+  noiseFill(ctx, 128, 128, "#c9b89a", 6);
+  ctx.strokeStyle = "rgba(160,140,108,0.25)";
+  ctx.lineWidth = 2;
+  for (let x = 0; x <= 128; x += 16) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 128);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "rgba(150,128,96,0.18)";
+  for (let y = 10; y < 128; y += 24) {
+    for (let x = 6; x < 128; x += 16) {
+      ctx.beginPath();
+      ctx.ellipse(x, y, 2.2, 2.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 家族写真。wrongで家族の誰か一人の顔が黒く塗り潰された異変になる */
+export function makeFamilyPhotoTexture(wrong: boolean): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(144, 112);
+  ctx.fillStyle = "#e8e0c8";
+  ctx.fillRect(0, 0, 144, 112);
+  ctx.strokeStyle = "#8a7a54";
+  ctx.lineWidth = 6;
+  ctx.strokeRect(3, 3, 138, 106);
+
+  const positions: [number, number][] = [
+    [36, 60],
+    [62, 54],
+    [88, 58],
+    [112, 64],
+  ];
+  const skin = "#d9bfa0";
+  for (let i = 0; i < positions.length; i++) {
+    const [cx, cy] = positions[i];
+    ctx.fillStyle = "#3a3630";
+    ctx.beginPath();
+    ctx.moveTo(cx - 14, 96);
+    ctx.lineTo(cx - 10, cy + 6);
+    ctx.lineTo(cx + 10, cy + 6);
+    ctx.lineTo(cx + 14, 96);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = wrong && i === 2 ? "#0a0a0a" : skin;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 9, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+export interface WallClockHandle {
+  group: THREE.Group;
+  handPivot: THREE.Object3D;
+}
+
+/** 壁掛け時計。handPivotを回転させて進める。異変では回転を止めて使う */
+export function buildWallClock(faceTex: THREE.Texture): WallClockHandle {
+  const group = new THREE.Group();
+  const rimMat = new THREE.MeshStandardMaterial({ color: 0x241c14, roughness: 0.5, metalness: 0.4 });
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.015, 8, 20), rimMat);
+  const faceMat = new THREE.MeshBasicMaterial({ map: faceTex, toneMapped: false });
+  const face = new THREE.Mesh(new THREE.CircleGeometry(0.16, 24), faceMat);
+  const handPivot = new THREE.Object3D();
+  const handMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4 });
+  const minuteHand = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.13, 0.004), handMat);
+  minuteHand.position.y = 0.06;
+  const hourHand = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.09, 0.004), handMat);
+  hourHand.position.y = 0.04;
+  hourHand.rotation.z = -0.9;
+  handPivot.add(minuteHand, hourHand);
+  handPivot.position.z = 0.012;
+  group.add(rim, face, handPivot);
+  return { group, handPivot };
+}
+
+/** 玄関の靴。extraSlotは別途visibleを切り替えて使う見覚えのない一足 */
+export interface EntranceShoeRackHandle {
+  group: THREE.Group;
+  extraShoe: THREE.Object3D;
+}
+
+function buildShoePair(color: number): THREE.Group {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.7 });
+  for (const x of [-0.08, 0.08]) {
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, 0.2), mat);
+    shoe.position.set(x, 0.025, 0);
+    group.add(shoe);
+  }
+  return group;
+}
+
+export function buildEntranceShoeRack(): EntranceShoeRackHandle {
+  const group = new THREE.Group();
+  const shelfMat = new THREE.MeshStandardMaterial({ color: 0x4a3a28, roughness: 0.85 });
+  const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.04, 0.26), shelfMat);
+  shelf.position.y = 0.3;
+  const legGeo = new THREE.BoxGeometry(0.04, 0.3, 0.04);
+  for (const x of [-0.26, 0.26]) {
+    const leg = new THREE.Mesh(legGeo, shelfMat);
+    leg.position.set(x, 0.15, 0);
+    group.add(leg);
+  }
+  const shoesA = buildShoePair(0x2a2a2a);
+  shoesA.position.set(-0.16, 0.32, 0);
+  const shoesB = buildShoePair(0x8a2a2a);
+  shoesB.position.set(0.16, 0.32, 0);
+  const extraShoe = buildShoePair(0x3a5a8a);
+  extraShoe.position.set(0, 0.32, 0.3);
+  extraShoe.visible = false;
+  group.add(shelf, shoesA, shoesB, extraShoe);
+  return { group, extraShoe };
+}
+
+export interface KitchenNookHandle {
+  group: THREE.Group;
+  fridgeLightMat: THREE.MeshStandardMaterial;
+}
+
+/** キッチンの一角（カウンター+冷蔵庫）。fridgeLightMatのemissiveで扉の隙間の光を切り替える */
+export function buildKitchenNook(): KitchenNookHandle {
+  const group = new THREE.Group();
+  const counterMat = new THREE.MeshStandardMaterial({ color: 0xd8d4c8, roughness: 0.6 });
+  const counter = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.45, 0.4), counterMat);
+  counter.position.set(-0.4, 0.225, 0);
+  const fridgeMat = new THREE.MeshStandardMaterial({ color: 0xe8e4dc, roughness: 0.4, metalness: 0.2 });
+  const fridge = new THREE.Mesh(new THREE.BoxGeometry(0.45, 1.1, 0.42), fridgeMat);
+  fridge.position.set(0.25, 0.55, 0);
+  const handleMat = new THREE.MeshStandardMaterial({ color: 0x8a8a8a, roughness: 0.3, metalness: 0.7 });
+  const handle = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.3, 0.02), handleMat);
+  handle.position.set(0.03, 0.6, 0.22);
+  const fridgeLightMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, emissive: 0x000000, emissiveIntensity: 0, roughness: 0.4 });
+  const fridgeLight = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 1.0), fridgeLightMat);
+  fridgeLight.position.set(0.015, 0.55, 0.21);
+  group.add(counter, fridge, handle, fridgeLight);
+  return { group, fridgeLightMat };
+}
+
+export interface HomeDoorHandle {
+  group: THREE.Group;
+  lightMat: THREE.MeshStandardMaterial;
+}
+
+/** 自室/浴室のドア。lightMatのemissiveでドア下の光の有無を切り替える */
+export function buildHomeDoor(): HomeDoorHandle {
+  const group = new THREE.Group();
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x5a4832, roughness: 0.7 });
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(0.68, 1.95, 0.06), frameMat);
+  frame.position.y = 0.975;
+  const panelMat = new THREE.MeshStandardMaterial({ color: 0xcfc4a4, roughness: 0.6 });
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(0.58, 1.82, 0.03), panelMat);
+  panel.position.set(0, 0.97, 0.02);
+  const knobMat = new THREE.MeshStandardMaterial({ color: 0xc9b060, roughness: 0.3, metalness: 0.7 });
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), knobMat);
+  knob.position.set(0.22, 0.95, 0.045);
+  const lightMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, emissive: 0x000000, emissiveIntensity: 0, roughness: 0.5 });
+  const lightStrip = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.015), lightMat);
+  lightStrip.position.set(0, 0.07, 0.04);
+  group.add(frame, panel, knob, lightStrip);
+  return { group, lightMat };
+}
+
+/** 曇った浴室の鏡。messageで指でなぞったような文字が異変として浮かぶ */
+export function makeMirrorTexture(message: boolean): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 96);
+  const grad = ctx.createLinearGradient(0, 0, 0, 96);
+  grad.addColorStop(0, "#b8c0c4");
+  grad.addColorStop(1, "#9aa4a8");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 128, 96);
+  noiseFill(ctx, 128, 96, "#aab2b6", 8);
+  if (message) {
+    ctx.strokeStyle = "rgba(40,44,46,0.55)";
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(26, 36);
+    ctx.lineTo(26, 64);
+    ctx.moveTo(26, 36);
+    ctx.lineTo(40, 64);
+    ctx.lineTo(40, 36);
+    ctx.moveTo(54, 36);
+    ctx.lineTo(54, 64);
+    ctx.lineTo(70, 64);
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 壁掛けカレンダー。markedで今日の日付が赤く囲まれた異変になる */
+export function makeCalendarTexture(marked: boolean): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 144);
+  ctx.fillStyle = "#f0ece0";
+  ctx.fillRect(0, 0, 128, 144);
+  ctx.strokeStyle = "#8a8366";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(2, 2, 124, 140);
+  ctx.fillStyle = "#2a2a2a";
+  ctx.font = "bold 14px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("10月", 64, 22);
+  const cols = 7;
+  const rows = 5;
+  let day = 1;
+  const markedDay = 17;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (day > 31) break;
+      const cx = 12 + c * 15.5;
+      const cy = 38 + r * 20;
+      ctx.fillStyle = "#3a3a3a";
+      ctx.font = "9px sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(String(day), cx, cy);
+      if (marked && day === markedDay) {
+        ctx.strokeStyle = "#c01818";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(cx + 4, cy - 3, 9, 8, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      day++;
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+export interface DiningSetHandle {
+  group: THREE.Group;
+  movedChair: THREE.Object3D;
+}
+
+/** ダイニングテーブル。movedChairの位置/回転を切り替えて「引かれた椅子」異変にする */
+export function buildDiningSet(): DiningSetHandle {
+  const group = new THREE.Group();
+  const woodMat = new THREE.MeshStandardMaterial({ color: 0x6a4e30, roughness: 0.7 });
+  const tableTop = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.04, 0.5), woodMat);
+  tableTop.position.y = 0.5;
+  const legGeo = new THREE.BoxGeometry(0.04, 0.5, 0.04);
+  for (const [lx, lz] of [
+    [-0.3, -0.2],
+    [0.3, -0.2],
+    [-0.3, 0.2],
+    [0.3, 0.2],
+  ] as [number, number][]) {
+    const leg = new THREE.Mesh(legGeo, woodMat);
+    leg.position.set(lx, 0.25, lz);
+    group.add(leg);
+  }
+  function buildChair(): THREE.Group {
+    const chair = new THREE.Group();
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.03, 0.28), woodMat);
+    seat.position.y = 0.26;
+    const back = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.3, 0.03), woodMat);
+    back.position.set(0, 0.41, -0.12);
+    const chairLegGeo = new THREE.BoxGeometry(0.025, 0.26, 0.025);
+    for (const [lx, lz] of [
+      [-0.12, -0.12],
+      [0.12, -0.12],
+      [-0.12, 0.12],
+      [0.12, 0.12],
+    ] as [number, number][]) {
+      const leg = new THREE.Mesh(chairLegGeo, woodMat);
+      leg.position.set(lx, 0.13, lz);
+      chair.add(leg);
+    }
+    chair.add(seat, back);
+    return chair;
+  }
+  const chairFixed = buildChair();
+  chairFixed.position.set(-0.45, 0, 0);
+  chairFixed.rotation.y = Math.PI / 2;
+  const movedChair = buildChair();
+  movedChair.position.set(0.45, 0, 0);
+  movedChair.rotation.y = -Math.PI / 2;
+  group.add(tableTop, chairFixed, movedChair);
+  return { group, movedChair };
+}
+
+export interface LivingRoomNookHandle {
+  group: THREE.Group;
+  tvMat: THREE.MeshBasicMaterial;
+  sittingFigure: THREE.Object3D;
+}
+
+/** リビングの一角（TV+ソファ）。tvMatの差し替えとsittingFigureの表示切替で異変を表現する */
+export function buildLivingRoomNook(tvOffTex: THREE.Texture): LivingRoomNookHandle {
+  const group = new THREE.Group();
+  const sofaMat = new THREE.MeshStandardMaterial({ color: 0x4a4038, roughness: 0.85 });
+  const sofaBase = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.28, 0.34), sofaMat);
+  sofaBase.position.set(-0.3, 0.17, 0.15);
+  const sofaBack = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.32, 0.08), sofaMat);
+  sofaBack.position.set(-0.3, 0.36, 0.3);
+
+  const standMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.6 });
+  const stand = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.3, 0.2), standMat);
+  stand.position.set(0.35, 0.18, -0.15);
+  const tvMat = new THREE.MeshBasicMaterial({ map: tvOffTex, toneMapped: false });
+  const tv = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.26), tvMat);
+  tv.position.set(0.35, 0.46, -0.049);
+
+  const sittingFigure = buildHumanSilhouette(0x0c0c0c, 1);
+  sittingFigure.scale.set(0.9, 0.6, 0.9);
+  sittingFigure.position.set(-0.3, -0.25, 0.15);
+  sittingFigure.visible = false;
+
+  group.add(sofaBase, sofaBack, stand, tv, sittingFigure);
+  return { group, tvMat, sittingFigure };
+}
+
+/** TV画面のノイズ（砂嵐）テクスチャ */
+export function makeTVStaticTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(64, 48);
+  const imgData = ctx.createImageData(64, 48);
+  for (let i = 0; i < imgData.data.length; i += 4) {
+    const v = Math.random() * 255;
+    imgData.data[i] = v;
+    imgData.data[i + 1] = v;
+    imgData.data[i + 2] = v;
+    imgData.data[i + 3] = 255;
+  }
+  ctx.putImageData(imgData, 0, 0);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+const HOME_FIGURE_COLORS: HumanoidColors = { skin: 0xc9b9a3, outfit: 0x8a8a92, legs: 0x2a2a2e };
+
+/** 自宅に立つ見知らぬ人影（STAGE09ボス用） */
+export function buildHomeIntruderFigure(): THREE.Group {
+  return buildHumanoidFigure(HOME_FIGURE_COLORS);
+}

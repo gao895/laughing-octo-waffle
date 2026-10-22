@@ -18,7 +18,7 @@ export const STAGES: StageConfig[] = [
   { id: 6, key: "stage06", name: "終電", subtitle: "LAST TRAIN", theme: "乗ってはいけない電車", implemented: true, loopsToClear: 6 },
   { id: 7, key: "stage07", name: "廃遊園地", subtitle: "AMUSEMENT PARK", theme: "笑っているもの", implemented: true, loopsToClear: 6 },
   { id: 8, key: "stage08", name: "廃村", subtitle: "VILLAGE", theme: "村人はあなたを知っている", implemented: true, loopsToClear: 6 },
-  { id: 9, key: "stage09", name: "自宅", subtitle: "HOME", theme: "ここが一番安全だと思った？", implemented: false, loopsToClear: 6 },
+  { id: 9, key: "stage09", name: "自宅", subtitle: "HOME", theme: "ここが一番安全だと思った？", implemented: true, loopsToClear: 6 },
   { id: 10, key: "stage10", name: "異界", subtitle: "THE OTHERWORLD", theme: "世界そのものが異変", implemented: false, loopsToClear: 10 },
 ];
 
