@@ -654,3 +654,253 @@ export function buildNurseSpeaker(): THREE.Group {
   group.add(box, grill);
   return group;
 }
+
+// ============================================================
+// STAGE03「廃校」用テクスチャ・小道具
+// ============================================================
+
+export function makeSchoolWallTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(256, 256);
+  noiseFill(ctx, 256, 256, "#d8d2b8", 8);
+  // 腰板（下部の濃い帯）
+  ctx.fillStyle = "#6b5c42";
+  ctx.fillRect(0, 170, 256, 86);
+  ctx.strokeStyle = "rgba(40,30,10,0.3)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, 170);
+  ctx.lineTo(256, 170);
+  ctx.stroke();
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+export function makeSchoolFloorTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(256, 256);
+  noiseFill(ctx, 256, 256, "#b89b6a", 10);
+  ctx.strokeStyle = "rgba(60,45,20,0.2)";
+  ctx.lineWidth = 2;
+  for (let x = 0; x <= 256; x += 32) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 256);
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(4, 14);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 教室の黒板。messageで書かれている文字を変える（空文字で「何も書かれていない」） */
+export function makeChalkboardTexture(message: string): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(192, 112);
+  ctx.fillStyle = "#1e3a2e";
+  ctx.fillRect(0, 0, 192, 112);
+  ctx.strokeStyle = "#5a4a30";
+  ctx.lineWidth = 5;
+  ctx.strokeRect(2, 2, 188, 108);
+  if (message) {
+    ctx.fillStyle = "rgba(235,235,225,0.9)";
+    ctx.font = "22px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(message, 96, 56);
+  } else {
+    // 薄いチョークの消し跡
+    ctx.strokeStyle = "rgba(220,220,210,0.12)";
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(20 + i * 10, 20);
+      ctx.lineTo(170 - i * 6, 92);
+      ctx.stroke();
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 卒業アルバム風の集合写真。extraで本来いないはずの顔を1つ紛れ込ませる */
+export function makeClassPortraitTexture(extra: boolean): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(160, 128);
+  ctx.fillStyle = "#e4ddc8";
+  ctx.fillRect(0, 0, 160, 128);
+  ctx.strokeStyle = "#8a8366";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, 156, 124);
+
+  const cols = 5;
+  const rows = 3;
+  const count = cols * rows - (extra ? 0 : 1);
+  ctx.fillStyle = "#cabf9e";
+  for (let i = 0; i < count; i++) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const cx = 22 + col * 28;
+    const cy = 26 + row * 32;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 9, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (extra) {
+    // 最後の1枠だけ、黒く塗り潰した「異質な顔」にする
+    const i = count - 1;
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const cx = 22 + col * 28;
+    const cy = 26 + row * 32;
+    ctx.fillStyle = "#0a0a0a";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 9, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 下駄箱。extraで、本来空であるはずの枠に見覚えのない上履きが増える */
+export function makeShoeCubbyTexture(extra: boolean): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(160, 112);
+  ctx.fillStyle = "#4a3c2a";
+  ctx.fillRect(0, 0, 160, 112);
+  const cols = 5;
+  const rows = 3;
+  const cellW = 160 / cols;
+  const cellH = 112 / rows;
+  ctx.strokeStyle = "#2a2018";
+  ctx.lineWidth = 2;
+  for (let c = 0; c <= cols; c++) {
+    ctx.beginPath();
+    ctx.moveTo(c * cellW, 0);
+    ctx.lineTo(c * cellW, 112);
+    ctx.stroke();
+  }
+  for (let r = 0; r <= rows; r++) {
+    ctx.beginPath();
+    ctx.moveTo(0, r * cellH);
+    ctx.lineTo(160, r * cellH);
+    ctx.stroke();
+  }
+  const filled = new Set([1, 3, 6, 9, 11, 13]);
+  ctx.fillStyle = "#d8d4c8";
+  for (const i of filled) {
+    const c = i % cols;
+    const r = Math.floor(i / cols);
+    ctx.beginPath();
+    ctx.ellipse(c * cellW + cellW / 2, r * cellH + cellH / 2, cellW * 0.3, cellH * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (extra) {
+    // 誰も使っていないはずの最後の枠にだけ、上履きが増えている
+    const emptyIdx = 14;
+    const c = emptyIdx % cols;
+    const r = Math.floor(emptyIdx / cols);
+    ctx.fillStyle = "#c01818";
+    ctx.beginPath();
+    ctx.ellipse(c * cellW + cellW / 2, r * cellH + cellH / 2, cellW * 0.3, cellH * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 廃校の廊下に繰り返し貼る掲示物 */
+export function makeSchoolNoticeTexture(variant: number): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 176);
+  ctx.fillStyle = "#ece6d0";
+  ctx.fillRect(0, 0, 128, 176);
+  ctx.strokeStyle = "#8a8366";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(2, 2, 124, 172);
+
+  const items: [string, string][] = [
+    ["私語厳禁", "廊下では静かに歩きましょう"],
+    ["上履き着用", "土足での立入を禁じます"],
+    ["避難経路", "最寄りの非常口はこちら"],
+    ["掲示板", "お知らせは職員室前にて"],
+  ];
+  const [title, body] = items[variant % items.length];
+
+  ctx.fillStyle = "#1c1a14";
+  ctx.font = "bold 18px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(title, 64, 32);
+
+  ctx.strokeStyle = "#2a5a3a";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(44, 48, 40, 40);
+
+  ctx.fillStyle = "#3a382e";
+  ctx.font = "10px sans-serif";
+  let line = "";
+  let y = 112;
+  for (const ch of body) {
+    line += ch;
+    if (line.length >= 9) {
+      ctx.fillText(line, 64, y);
+      line = "";
+      y += 15;
+    }
+  }
+  if (line) ctx.fillText(line, 64, y);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+const STUDENT_COLORS: HumanoidColors = { skin: 0xc9b9a3, outfit: 0x24304a, legs: 0x1c1c22 };
+
+/** 生徒（STAGE03）。学生服寄りの配色の低ポリ人型 */
+export function buildStudentFigure(): THREE.Group {
+  return buildHumanoidFigure(STUDENT_COLORS);
+}
+
+/** ロッカー列。ajarIndexで指定した1台だけ、扉が少し開いた状態になる */
+export function buildLockerRow(count: number, ajarIndex: number | null): THREE.Group {
+  const group = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x3a4a52, roughness: 0.6, metalness: 0.3 });
+  const doorMat = new THREE.MeshStandardMaterial({ color: 0x4a5c66, roughness: 0.5, metalness: 0.4 });
+  const width = 0.32;
+  for (let i = 0; i < count; i++) {
+    const body = new THREE.Mesh(new THREE.BoxGeometry(width - 0.02, 0.85, 0.32), bodyMat);
+    body.position.set(i * width, 0.43, 0);
+    const doorPivot = new THREE.Object3D();
+    doorPivot.position.set(i * width - (width - 0.02) / 2, 0.43, 0.16);
+    const door = new THREE.Mesh(new THREE.BoxGeometry(width - 0.04, 0.8, 0.02), doorMat);
+    door.position.set((width - 0.04) / 2, 0, 0.01);
+    doorPivot.add(door);
+    if (ajarIndex !== null && i === ajarIndex) {
+      doorPivot.rotation.y = -0.9;
+    }
+    group.add(body, doorPivot);
+  }
+  return group;
+}
+
+/** 教室の窓越しに見える机の列。countで列の机の数を変化させる */
+export function buildDeskRow(count: number): THREE.Group {
+  const group = new THREE.Group();
+  const deskMat = new THREE.MeshStandardMaterial({ color: 0x8a6b45, roughness: 0.8 });
+  const legMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.6, metalness: 0.3 });
+  const cols = 3;
+  for (let i = 0; i < count; i++) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const desk = new THREE.Group();
+    const top = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.015, 0.12), deskMat);
+    top.position.y = 0.16;
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.16, 0.02), legMat);
+    desk.add(top, leg);
+    desk.position.set((col - 1) * 0.22, 0, -row * 0.18);
+    group.add(desk);
+  }
+  return group;
+}
