@@ -1904,3 +1904,512 @@ const TRAIN_PASSENGER_COLORS: HumanoidColors = { skin: 0xc9b9a3, outfit: 0x24282
 export function buildTrainPassengerFigure(): THREE.Group {
   return buildHumanoidFigure(TRAIN_PASSENGER_COLORS);
 }
+
+// ============================================================
+// STAGE07「廃遊園地」用テクスチャ・小道具
+// ============================================================
+
+export function makeParkPathTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 128);
+  noiseFill(ctx, 128, 128, "#4a4038", 6);
+  ctx.strokeStyle = "rgba(20,18,14,0.5)";
+  ctx.lineWidth = 2;
+  for (let x = 0; x <= 128; x += 32) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 128);
+    ctx.stroke();
+  }
+  for (let y = 0; y <= 128; y += 32) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(128, y);
+    ctx.stroke();
+  }
+  // 色あせたカーニバル柄のタイルを所々に
+  ctx.fillStyle = "rgba(140,40,30,0.18)";
+  for (let i = 0; i < 6; i++) {
+    const gx = Math.floor(Math.random() * 4) * 32;
+    const gy = Math.floor(Math.random() * 4) * 32;
+    ctx.fillRect(gx + 2, gy + 2, 28, 28);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(1, 20);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+export function makeParkFenceTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 128);
+  noiseFill(ctx, 128, 128, "#201c22", 6);
+  // 色あせた赤白ストライプの看板パネル
+  ctx.save();
+  ctx.translate(64, 64);
+  ctx.rotate(Math.PI / 4);
+  for (let x = -160; x < 160; x += 24) {
+    ctx.fillStyle = Math.floor(x / 24) % 2 === 0 ? "rgba(130,30,30,0.35)" : "rgba(180,170,150,0.12)";
+    ctx.fillRect(x, -160, 12, 320);
+  }
+  ctx.restore();
+  ctx.strokeStyle = "rgba(10,8,10,0.6)";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, 124, 124);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 園内に繰り返し立つ注意書き/アトラクション案内の立て看板 */
+export function makeParkNoticeTexture(variant: number): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 176);
+  ctx.fillStyle = "#1c3a3a";
+  ctx.fillRect(0, 0, 128, 176);
+  ctx.strokeStyle = "#0c1c1c";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, 124, 172);
+
+  const items: [string, string][] = [
+    ["ご案内", "お手を離さずお進みください"],
+    ["営業時間", "閉園後の入場は禁止です"],
+    ["順路", "矢印に沿ってお進みください"],
+    ["迷子注意", "はぐれた場合は係員まで"],
+  ];
+  const [title, body] = items[variant % items.length];
+
+  ctx.fillStyle = "#ffd94a";
+  ctx.font = "bold 20px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(title, 64, 34);
+
+  ctx.strokeStyle = "#ff8a4a";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(24, 46);
+  ctx.lineTo(104, 46);
+  ctx.stroke();
+
+  ctx.fillStyle = "#cfe4e4";
+  ctx.font = "11px sans-serif";
+  let line = "";
+  let y = 70;
+  for (const ch of body) {
+    line += ch;
+    if (line.length >= 8) {
+      ctx.fillText(line, 64, y);
+      line = "";
+      y += 16;
+    }
+  }
+  if (line) ctx.fillText(line, 64, y);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** メリーゴーランドの天蓋（紅白ストライプ+金の縁取り） */
+export function makeCarouselCanopyTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(256, 64);
+  for (let x = 0; x < 256; x += 32) {
+    ctx.fillStyle = (x / 32) % 2 === 0 ? "#7a1c1c" : "#ddd3b8";
+    ctx.fillRect(x, 0, 32, 64);
+  }
+  ctx.fillStyle = "rgba(180,150,70,0.8)";
+  ctx.fillRect(0, 0, 256, 6);
+  ctx.fillRect(0, 58, 256, 6);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** マスコット像/着ぐるみの顔。variantで笑顔の種類を変える */
+export function makeMascotFaceTexture(variant: "normal" | "wide" | "blank"): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(160, 160);
+  ctx.fillStyle = "#e8d8a0";
+  ctx.beginPath();
+  ctx.arc(80, 80, 72, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#9a7a30";
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  if (variant === "blank") {
+    // 目鼻がなく、口だけがうっすら残っている
+    ctx.strokeStyle = "#4a3a1c";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(80, 98, 26, 0.1 * Math.PI, 0.9 * Math.PI);
+    ctx.stroke();
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  ctx.fillStyle = "#1a1410";
+  ctx.beginPath();
+  ctx.ellipse(52, 66, 9, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(108, 66, 9, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#c03838";
+  ctx.beginPath();
+  ctx.ellipse(44, 94, 8, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(116, 94, 8, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "#6a1414";
+  ctx.fillStyle = "#3a0808";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  if (variant === "wide") {
+    // 顔からはみ出すほど不自然に大きい笑み
+    ctx.moveTo(14, 100);
+    ctx.quadraticCurveTo(80, 170, 146, 100);
+    ctx.quadraticCurveTo(80, 140, 14, 100);
+  } else {
+    ctx.moveTo(40, 108);
+    ctx.quadraticCurveTo(80, 136, 120, 108);
+    ctx.quadraticCurveTo(80, 124, 40, 108);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  if (variant === "wide") {
+    ctx.fillStyle = "#fff";
+    for (let i = 0; i < 7; i++) {
+      ctx.fillRect(26 + i * 15, 104, 8, 10);
+    }
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 顔抜き看板。showFaceで穴から覗く顔を描き足す */
+export function makeCutoutBoardTexture(showFace: boolean): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(160, 224);
+  ctx.fillStyle = "#caa15a";
+  ctx.fillRect(0, 0, 160, 224);
+  // 二人並んだ陽気な着ぐるみの胴体を描く
+  for (const cx of [48, 112]) {
+    ctx.fillStyle = cx === 48 ? "#2a6a8a" : "#8a2a4a";
+    ctx.beginPath();
+    ctx.ellipse(cx, 150, 34, 60, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#e8d8a0";
+    ctx.beginPath();
+    ctx.ellipse(cx, 92, 10, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // 顔の穴（くり抜き）
+  for (const cx of [48, 112]) {
+    ctx.fillStyle = showFace ? "#0a0806" : "#070504";
+    ctx.beginPath();
+    ctx.arc(cx, 58, 26, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#5a4020";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+  if (showFace) {
+    // 右側の穴にだけ、覗く顔を描く
+    ctx.fillStyle = "#1a1410";
+    ctx.beginPath();
+    ctx.ellipse(104, 54, 5, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(120, 54, 5, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#3a0808";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(98, 68);
+    ctx.quadraticCurveTo(112, 80, 126, 68);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = "rgba(0,0,0,0.5)";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, 156, 220);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 射的屋台の景品棚。anomalyで「自分の持ち物」風の景品に差し替える */
+export function makePrizeShelfTexture(anomaly: boolean): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(192, 96);
+  ctx.fillStyle = "#3a2c1c";
+  ctx.fillRect(0, 0, 192, 96);
+  ctx.fillStyle = "#5a4428";
+  for (let y = 24; y < 96; y += 24) {
+    ctx.fillRect(0, y, 192, 3);
+  }
+  const prizeColors = anomaly
+    ? ["#8a8a8a", "#d8d4c4", "#4a4a4a", "#c9b9a3", "#2a2a2a", "#e8e4d8"]
+    : ["#d94a4a", "#4ad9a0", "#d9c94a", "#4a7ad9", "#d94ac0", "#8ad94a"];
+  let i = 0;
+  for (let y = 4; y < 96; y += 24) {
+    for (let x = 4; x < 192; x += 32) {
+      ctx.fillStyle = prizeColors[i % prizeColors.length];
+      ctx.fillRect(x, y, 22, 16);
+      i++;
+    }
+  }
+  if (anomaly) {
+    // 一つだけ、プレイヤーの持ち物のようなシルエット（バッグ風）を描く
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(84, 6, 24, 14);
+    ctx.strokeStyle = "#555";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(84, 6, 24, 14);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** チケットブース（閉鎖中の券売窓口） */
+export function buildTicketBooth(signTex: THREE.Texture): { group: THREE.Group; windowLightMat: THREE.MeshStandardMaterial } {
+  const group = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x8a6a3a, roughness: 0.8 });
+  const roofMat = new THREE.MeshStandardMaterial({ color: 0x5a2a2a, roughness: 0.7 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.3, 0.7), bodyMat);
+  body.position.y = 0.65;
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(0.75, 0.4, 4), roofMat);
+  roof.rotation.y = Math.PI / 4;
+  roof.position.y = 1.5;
+  const windowLightMat = new THREE.MeshStandardMaterial({
+    color: 0x0a0a0a,
+    emissive: 0x000000,
+    emissiveIntensity: 0,
+    roughness: 0.3,
+  });
+  const windowMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.35), windowLightMat);
+  windowMesh.position.set(0, 0.85, 0.36);
+  const counter = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.08, 0.3), bodyMat);
+  counter.position.set(0, 0.55, 0.5);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.2), new THREE.MeshBasicMaterial({ map: signTex, toneMapped: false }));
+  sign.position.set(0, 1.18, 0.36);
+  group.add(body, roof, windowMesh, counter, sign);
+  return { group, windowLightMat };
+}
+
+/** メリーゴーランドの馬（簡易形状） */
+export function buildCarouselHorse(colorHex: number): THREE.Group {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.6, metalness: 0.1 });
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.3, 6), new THREE.MeshStandardMaterial({ color: 0xd8c488, roughness: 0.4, metalness: 0.6 }));
+  pole.position.y = 0.65;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.2, 0.42), mat);
+  body.position.y = 0.55;
+  const neck = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.24, 0.14), mat);
+  neck.position.set(0, 0.72, 0.18);
+  neck.rotation.x = -0.4;
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.14, 0.2), mat);
+  head.position.set(0, 0.86, 0.3);
+  const legGeo = new THREE.BoxGeometry(0.05, 0.3, 0.05);
+  const legMat = mat;
+  const legPositions: [number, number][] = [
+    [-0.06, 0.18],
+    [0.06, 0.18],
+    [-0.06, -0.16],
+    [0.06, -0.16],
+  ];
+  for (const [lx, lz] of legPositions) {
+    const leg = new THREE.Mesh(legGeo, legMat);
+    leg.position.set(lx, 0.4, lz);
+    leg.rotation.x = lz > 0 ? 0.3 : -0.3;
+    group.add(leg);
+  }
+  group.add(pole, body, neck, head);
+  return group;
+}
+
+export interface CarouselHandle {
+  group: THREE.Group;
+  horses: THREE.Group[];
+}
+
+/** メリーゴーランド本体。horsesを個別に回転/差し替えできるよう返す */
+export function buildCarousel(radius: number, horseCount: number, canopyTex: THREE.Texture): CarouselHandle {
+  const group = new THREE.Group();
+  const baseMat = new THREE.MeshStandardMaterial({ color: 0x6a5a3a, roughness: 0.8 });
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, 0.12, 20), baseMat);
+  base.position.y = 0.06;
+  const centerPole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.06, 0.06, 1.9, 10),
+    new THREE.MeshStandardMaterial({ color: 0xc9b060, roughness: 0.4, metalness: 0.6 })
+  );
+  centerPole.position.y = 1.0;
+  canopyTex.repeat.set(6, 1);
+  const canopy = new THREE.Mesh(
+    new THREE.ConeGeometry(radius + 0.3, 0.8, 16, 1, true),
+    new THREE.MeshStandardMaterial({ map: canopyTex, roughness: 0.7, side: THREE.DoubleSide })
+  );
+  canopy.position.y = 2.3;
+  const ringLight = new THREE.Mesh(
+    new THREE.TorusGeometry(radius + 0.28, 0.03, 6, 24),
+    new THREE.MeshStandardMaterial({ color: 0xffdca0, emissive: 0xffb347, emissiveIntensity: 1.2, roughness: 0.5 })
+  );
+  ringLight.rotation.x = Math.PI / 2;
+  ringLight.position.y = 1.95;
+  group.add(base, centerPole, canopy, ringLight);
+
+  const horseColors = [0xd94a4a, 0xffffff, 0x4a7ad9, 0xd9c94a];
+  const horses: THREE.Group[] = [];
+  for (let i = 0; i < horseCount; i++) {
+    const a = (i / horseCount) * Math.PI * 2;
+    const horse = buildCarouselHorse(horseColors[i % horseColors.length]);
+    horse.position.set(Math.sin(a) * (radius - 0.35), 0.1, Math.cos(a) * (radius - 0.35));
+    horse.rotation.y = a;
+    group.add(horse);
+    horses.push(horse);
+  }
+  return { group, horses };
+}
+
+export interface CutoutBoardHandle {
+  group: THREE.Group;
+  faceMat: THREE.MeshBasicMaterial;
+}
+
+/** 顔抜き看板。faceMatのmapを差し替えて「覗く顔」異変を表現する */
+export function buildCutoutBoard(initialTex: THREE.Texture): CutoutBoardHandle {
+  const group = new THREE.Group();
+  const faceMat = new THREE.MeshBasicMaterial({ map: initialTex, toneMapped: false });
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.12), faceMat);
+  board.position.y = 0.95;
+  const standMat = new THREE.MeshStandardMaterial({ color: 0x4a3a28, roughness: 0.9 });
+  const standL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.95, 0.06), standMat);
+  standL.position.set(-0.3, 0.48, -0.03);
+  const standR = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.95, 0.06), standMat);
+  standR.position.set(0.3, 0.48, -0.03);
+  group.add(board, standL, standR);
+  return { group, faceMat };
+}
+
+export interface MascotStatueHandle {
+  group: THREE.Group;
+  headPivot: THREE.Object3D;
+  faceMat: THREE.MeshBasicMaterial;
+}
+
+/** マスコット像。headPivotで視線を追わせ、faceMatで笑みの種類を差し替えられる */
+export function buildMascotStatue(initialFaceTex: THREE.Texture): MascotStatueHandle {
+  const group = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd94a6a, roughness: 0.7 });
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 0.12, 14), new THREE.MeshStandardMaterial({ color: 0x4a3a28, roughness: 0.9 }));
+  base.position.y = 0.06;
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 0.75, 6, 12), bodyMat);
+  body.position.y = 0.72;
+  const headPivot = new THREE.Object3D();
+  headPivot.position.y = 1.32;
+  const headSphere = new THREE.Mesh(new THREE.SphereGeometry(0.26, 16, 14), new THREE.MeshStandardMaterial({ color: 0xe8d8a0, roughness: 0.6 }));
+  const faceMat = new THREE.MeshBasicMaterial({ map: initialFaceTex, toneMapped: false });
+  const facePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.42), faceMat);
+  facePlane.position.z = 0.24;
+  const earGeo = new THREE.SphereGeometry(0.08, 10, 8);
+  const earL = new THREE.Mesh(earGeo, new THREE.MeshStandardMaterial({ color: 0xd94a6a, roughness: 0.7 }));
+  earL.position.set(-0.26, 0.1, 0);
+  const earR = earL.clone();
+  earR.position.x = 0.26;
+  headPivot.add(headSphere, facePlane, earL, earR);
+  group.add(base, body, headPivot);
+  return { group, headPivot, faceMat };
+}
+
+export interface BalloonCartHandle {
+  group: THREE.Group;
+  balloonMats: THREE.MeshStandardMaterial[];
+}
+
+/** 風船売り場のカート。balloonMatsの色を差し替えて異変を表現する */
+export function buildBalloonCart(): BalloonCartHandle {
+  const group = new THREE.Group();
+  const cartMat = new THREE.MeshStandardMaterial({ color: 0x6a4a2a, roughness: 0.8 });
+  const cart = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.45, 0.35), cartMat);
+  cart.position.y = 0.3;
+  const wheelGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.05, 10);
+  const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 });
+  for (const wx of [-0.22, 0.22]) {
+    const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+    wheel.rotation.z = Math.PI / 2;
+    wheel.position.set(wx, 0.1, 0);
+    group.add(wheel);
+  }
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.9, 6), new THREE.MeshStandardMaterial({ color: 0x8a8a8a, roughness: 0.4 }));
+  pole.position.set(0, 0.95, 0);
+  const balloonColors = [0xd94a4a, 0xffd94a, 0x4a9ad9, 0x8ad94a, 0xd94ac0];
+  const balloonMats: THREE.MeshStandardMaterial[] = [];
+  for (let i = 0; i < 5; i++) {
+    const mat = new THREE.MeshStandardMaterial({ color: balloonColors[i], roughness: 0.3, metalness: 0.1 });
+    const balloon = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 10), mat);
+    const a = (i / 5) * Math.PI * 2;
+    balloon.position.set(Math.sin(a) * 0.14, 1.35 + Math.cos(a * 2) * 0.05, Math.cos(a) * 0.14);
+    group.add(balloon);
+    balloonMats.push(mat);
+  }
+  group.add(cart, pole);
+  return { group, balloonMats };
+}
+
+/** 観覧車のシルエット。group.rotation.zを回すと異変「動く観覧車」になる */
+export function buildFerrisWheel(radius: number, gondolaCount: number): THREE.Group {
+  const group = new THREE.Group();
+  const rimMat = new THREE.MeshStandardMaterial({ color: 0x0c0c10, roughness: 0.8, metalness: 0.3 });
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.06, 8, 32), rimMat);
+  group.add(rim);
+  const spokeMat = new THREE.MeshStandardMaterial({ color: 0x0c0c10, roughness: 0.8, metalness: 0.3 });
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, radius * 2, 6), spokeMat);
+    spoke.rotation.z = Math.PI / 2;
+    spoke.rotation.y = a;
+    group.add(spoke);
+  }
+  const gondolaMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.6, emissive: 0x3a2a10, emissiveIntensity: 0.4 });
+  for (let i = 0; i < gondolaCount; i++) {
+    const a = (i / gondolaCount) * Math.PI * 2;
+    const gondola = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, 0.14), gondolaMat);
+    gondola.position.set(Math.sin(a) * radius, Math.cos(a) * radius, 0);
+    group.add(gondola);
+  }
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.08, 10), rimMat);
+  hub.rotation.x = Math.PI / 2;
+  group.add(hub);
+  const legMat = new THREE.MeshStandardMaterial({ color: 0x0c0c10, roughness: 0.8 });
+  for (const lx of [-radius * 0.55, radius * 0.55]) {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, radius * 1.3, 6), legMat);
+    leg.position.set(lx, -radius * 0.1, -0.3);
+    leg.rotation.z = lx > 0 ? -0.35 : 0.35;
+    group.add(leg);
+  }
+  return group;
+}
+
+const MASCOT_COSTUME_COLORS: HumanoidColors = { skin: 0xe8d8a0, outfit: 0xd94a6a, legs: 0x4a3a28 };
+
+export interface MascotCostumeHandle {
+  group: THREE.Group;
+  faceMat: THREE.MeshBasicMaterial;
+}
+
+/** 着ぐるみボス。顔はマスコット像と同じ「笑っているもの」であることを示す */
+export function buildMascotCostumeFigure(faceTex: THREE.Texture): MascotCostumeHandle {
+  const group = buildHumanoidFigure(MASCOT_COSTUME_COLORS);
+  const faceMat = new THREE.MeshBasicMaterial({ map: faceTex, toneMapped: false });
+  const bigHead = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 14), new THREE.MeshStandardMaterial({ color: 0xe8d8a0, roughness: 0.6 }));
+  bigHead.position.y = 1.65;
+  const facePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.36), faceMat);
+  facePlane.position.set(0, 1.65, 0.2);
+  group.add(bigHead, facePlane);
+  return { group, faceMat };
+}
