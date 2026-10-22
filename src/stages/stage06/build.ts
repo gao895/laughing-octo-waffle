@@ -11,7 +11,6 @@ import {
   makeTrainAdTexture,
   makePrioritySeatTexture,
   makeArrowSignTexture,
-  buildTrainSeatBench,
   buildTrainBenchRun,
   buildStanchionPole,
   buildCeilingLightStrip,
@@ -20,6 +19,7 @@ import {
   buildTrainWindow,
   buildTrainPassengerFigure,
   type StrapRowHandle,
+  type TrainWindowHandle,
 } from "../../three/EnvironmentManager";
 import { buildCorridorShell, addCorridorLights, buildDoorAndSign, scatterWallDecor } from "../shared/corridorBuilder";
 
@@ -32,6 +32,18 @@ const HALF_WIDTH = 1.3;
 
 function halfWidthAt(_z: number): number {
   return HALF_WIDTH;
+}
+
+// 両壁で全く同じ位置・長さのベンチ区画(ベイ)を並べ、実際の通勤電車のように
+// 左右対称なロングシート+窓の連続にする。異変用の小道具はこのベイの上に
+// 「乗せる」形で後付けし、座席そのものの構造は左右で変えない。
+const BAY_CENTERS = [8.5, 4.9, 1.3, -2.3, -5.9, -9.5, -13.1, -16.7];
+const BAY_LENGTH = 3.0;
+
+interface BenchBayHandle {
+  bench: THREE.Group;
+  window: TrainWindowHandle;
+  centerZ: number;
 }
 
 export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audio: AudioManager): StageRuntime {
@@ -73,123 +85,8 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
   group.add(strapHandle.group);
   const SWAY_STRAP_INDEX = 8;
 
-  // --- 路線図（z=9, 左壁） ---
-  const ROUTE_MAP_Z = 9;
-  const routeMapTexNormal = makeRouteMapTexture(false);
-  const routeMapTexAnomaly = makeRouteMapTexture(true);
-  const routeMapMat = new THREE.MeshBasicMaterial({ map: routeMapTexNormal, toneMapped: false });
-  const routeMapPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.75, 0.38), routeMapMat);
-  routeMapPlane.position.set(-(halfWidthAt(ROUTE_MAP_Z) - 0.03), 1.85, ROUTE_MAP_Z);
-  routeMapPlane.rotation.y = Math.PI / 2;
-  group.add(routeMapPlane);
-  const routeMapWindow = buildTrainWindow(0.75, 0.7);
-  routeMapWindow.group.position.set(-(halfWidthAt(ROUTE_MAP_Z) - 0.01), 1.55, ROUTE_MAP_Z);
-  routeMapWindow.group.rotation.y = Math.PI / 2;
-  group.add(routeMapWindow.group);
-
-  // --- 車内広告（z=3, 右壁） ---
-  const AD_Z = 3;
-  const adTexNormal = makeTrainAdTexture(false);
-  const adTexAnomaly = makeTrainAdTexture(true);
-  const adMat = new THREE.MeshBasicMaterial({ map: adTexNormal, toneMapped: false });
-  const adPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.38), adMat);
-  adPlane.position.set(halfWidthAt(AD_Z) - 0.03, 1.85, AD_Z);
-  adPlane.rotation.y = -Math.PI / 2;
-  group.add(adPlane);
-  const adWindow = buildTrainWindow(0.75, 0.7);
-  adWindow.group.position.set(halfWidthAt(AD_Z) - 0.01, 1.55, AD_Z);
-  adWindow.group.rotation.y = -Math.PI / 2;
-  group.add(adWindow.group);
-
-  // --- 非常停止ボタン（z=0, 左壁） ---
-  const BUTTON_Z = 0;
-  const emergencyButton = buildEmergencyButton();
-  emergencyButton.group.position.set(-(halfWidthAt(BUTTON_Z) - 0.03), 1.3, BUTTON_Z);
-  emergencyButton.group.rotation.y = Math.PI / 2;
-  group.add(emergencyButton.group);
-
-  // --- 優先席（z=-3, 右壁） ---
-  const PRIORITY_Z = -3;
-  const prioritySeat = buildTrainSeatBench(0.9);
-  prioritySeat.position.set(halfWidthAt(PRIORITY_Z) - 0.22, 0, PRIORITY_Z);
-  prioritySeat.rotation.y = Math.PI;
-  group.add(prioritySeat);
-  const prioritySignTexNormal = makePrioritySeatTexture(false);
-  const prioritySignTexAnomaly = makePrioritySeatTexture(true);
-  const prioritySignMat = new THREE.MeshBasicMaterial({ map: prioritySignTexNormal, toneMapped: false });
-  const prioritySignPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.2), prioritySignMat);
-  prioritySignPlane.position.set(halfWidthAt(PRIORITY_Z) - 0.03, 1.75, PRIORITY_Z);
-  prioritySignPlane.rotation.y = -Math.PI / 2;
-  group.add(prioritySignPlane);
-  const priorityWindow = buildTrainWindow(0.75, 0.7);
-  priorityWindow.group.position.set(halfWidthAt(PRIORITY_Z) - 0.01, 1.55, PRIORITY_Z);
-  priorityWindow.group.rotation.y = -Math.PI / 2;
-  group.add(priorityWindow.group);
-  const priorityPoleA = buildStanchionPole(1.9);
-  priorityPoleA.position.set(halfWidthAt(PRIORITY_Z) - 0.05, 0, PRIORITY_Z - 0.5);
-  const priorityPoleB = buildStanchionPole(1.9);
-  priorityPoleB.position.set(halfWidthAt(PRIORITY_Z) - 0.05, 0, PRIORITY_Z + 0.5);
-  group.add(priorityPoleA, priorityPoleB);
-
-  // --- 乗客が増える座席（z=-6, 左壁） ---
-  const PASSENGER_SEAT_Z = -6;
-  const passengerSeat = buildTrainSeatBench(0.9);
-  passengerSeat.position.set(-(halfWidthAt(PASSENGER_SEAT_Z) - 0.22), 0, PASSENGER_SEAT_Z);
-  group.add(passengerSeat);
-  const extraPassenger = buildTrainPassengerFigure();
-  extraPassenger.scale.setScalar(0.92);
-  extraPassenger.position.set(-(halfWidthAt(PASSENGER_SEAT_Z) - 0.3), 0.42, PASSENGER_SEAT_Z);
-  extraPassenger.rotation.y = -Math.PI / 2;
-  extraPassenger.visible = false;
-  group.add(extraPassenger);
-  const passengerWindow = buildTrainWindow(0.75, 0.7);
-  passengerWindow.group.position.set(-(halfWidthAt(PASSENGER_SEAT_Z) - 0.01), 1.55, PASSENGER_SEAT_Z);
-  passengerWindow.group.rotation.y = Math.PI / 2;
-  group.add(passengerWindow.group);
-  const passengerPoleA = buildStanchionPole(1.9);
-  passengerPoleA.position.set(-(halfWidthAt(PASSENGER_SEAT_Z) - 0.05), 0, PASSENGER_SEAT_Z - 0.5);
-  const passengerPoleB = buildStanchionPole(1.9);
-  passengerPoleB.position.set(-(halfWidthAt(PASSENGER_SEAT_Z) - 0.05), 0, PASSENGER_SEAT_Z + 0.5);
-  group.add(passengerPoleA, passengerPoleB);
-
-  // --- 車窓（外に人影, z=-9, 右壁） ---
-  const WINDOW_FIGURE_Z = -9;
-  const windowFigureProp = buildTrainWindow(0.78, 0.72);
-  windowFigureProp.group.position.set(halfWidthAt(WINDOW_FIGURE_Z) - 0.01, 1.55, WINDOW_FIGURE_Z);
-  windowFigureProp.group.rotation.y = -Math.PI / 2;
-  group.add(windowFigureProp.group);
-  const outsideFigure = buildTrainPassengerFigure();
-  outsideFigure.scale.set(0.4, 0.4, 0.15);
-  outsideFigure.position.set(halfWidthAt(WINDOW_FIGURE_Z) + 0.3, 1.1, WINDOW_FIGURE_Z);
-  outsideFigure.visible = false;
-  group.add(outsideFigure);
-  let windowFigureHiddenByProximity = false;
-
-  // --- 車窓（反射に人影, z=-12, 左壁） ---
-  const WINDOW_REFLECT_Z = -12;
-  const windowReflectProp = buildTrainWindow(0.78, 0.72);
-  windowReflectProp.group.position.set(-(halfWidthAt(WINDOW_REFLECT_Z) - 0.01), 1.55, WINDOW_REFLECT_Z);
-  windowReflectProp.group.rotation.y = Math.PI / 2;
-  group.add(windowReflectProp.group);
-  const reflectFigure = buildTrainPassengerFigure();
-  reflectFigure.scale.set(0.5, 0.5, 0.02);
-  reflectFigure.position.set(-(halfWidthAt(WINDOW_REFLECT_Z) - 0.08), 0.55, WINDOW_REFLECT_Z);
-  reflectFigure.rotation.y = Math.PI / 2;
-  reflectFigure.visible = false;
-  group.add(reflectFigure);
-
-  // --- ボスの乗客（連結部手前, z=-22.2） ---
-  const BOSS_Z = DOOR_Z + 2.4;
-  const anotherPassenger = buildTrainPassengerFigure();
-  anotherPassenger.position.set(0, 0, BOSS_Z);
-  anotherPassenger.visible = false;
-  group.add(anotherPassenger);
-
-  // --- 一般のロングシート（装飾, 両壁に連続配置）。
-  // 実際の通勤電車のように、短い座席を間隔を空けて並べるのではなく、
-  // 仕切り板付きの長いベンチシート＋大きな車窓を連続させてリアルさを出す。
-  // 専用異変プロップが既に占めているゾーンだけを避けて配置する。
-  function addBenchRun(side: 1 | -1, centerZ: number, length: number) {
+  // --- 両壁に左右対称のロングシート区画を並べる ---
+  function addBenchBay(side: 1 | -1, centerZ: number, length: number): BenchBayHandle {
     const hw = halfWidthAt(centerZ);
     const divisions = Math.max(2, Math.round(length / 0.9));
     const bench = buildTrainBenchRun(length, divisions);
@@ -199,9 +96,8 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
     const x = side === 1 ? hw - 0.22 : -(hw - 0.22);
     const xWin = side === 1 ? hw - 0.01 : -(hw - 0.01);
     const xPole = side === 1 ? hw - 0.05 : -(hw - 0.05);
-    // buildTrainBenchRunは奥行き(length)がすでにローカルZ軸方向に沿っているため、
-    // 壁沿い(ワールドZ軸方向)に向けるには回転させず、背もたれの向きだけを
-    // 180度反転させて壁側に来るようにする（窓などの平面プロップとは逆の扱い）。
+    // buildTrainBenchRunは奥行き(length)が既にローカルZ軸方向に沿っているため、
+    // 壁沿い(ワールドZ軸方向)に向けるには回転させず、背もたれの左右だけを反転する。
     const benchRotY = side === 1 ? Math.PI : 0;
     const winRotY = side === 1 ? -Math.PI / 2 : Math.PI / 2;
     bench.position.set(x, 0, centerZ);
@@ -211,22 +107,81 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
     poleA.position.set(xPole, 0, centerZ - length / 2);
     poleB.position.set(xPole, 0, centerZ + length / 2);
     group.add(bench, win.group, poleA, poleB);
+    return { bench, window: win, centerZ };
   }
 
-  // 右壁（AD_Z/PRIORITY_Z/WINDOW_FIGURE_Zの専用ゾーンを避ける）
-  addBenchRun(1, 8.65, 3.3);
-  addBenchRun(1, 0.4, 2.0);
-  addBenchRun(1, -6.0, 3.6);
-  addBenchRun(1, -13.2, 4.2);
-  addBenchRun(1, -18.0, 4.8);
+  /** 窓の上、天井との間に小さな掲示物プレートを取り付ける */
+  function mountPlate(side: 1 | -1, z: number, width: number, height: number, mat: THREE.Material): THREE.Mesh {
+    const hw = halfWidthAt(z);
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(width, height), mat);
+    plane.position.set(side === 1 ? hw - 0.03 : -(hw - 0.03), 2.07, z);
+    plane.rotation.y = side === 1 ? -Math.PI / 2 : Math.PI / 2;
+    group.add(plane);
+    return plane;
+  }
 
-  // 左壁（ROUTE_MAP_Z/BUTTON_Z/PASSENGER_SEAT_Z/WINDOW_REFLECT_Zの専用ゾーンを避ける）
-  addBenchRun(-1, 6.0, 3.0);
-  addBenchRun(-1, 2.0, 2.8);
-  addBenchRun(-1, -3.0, 3.4);
-  addBenchRun(-1, -9.0, 3.4);
-  addBenchRun(-1, -15.5, 4.0);
-  addBenchRun(-1, -19.0, 3.0);
+  const rightBays = BAY_CENTERS.map((z) => addBenchBay(1, z, BAY_LENGTH));
+  const leftBays = BAY_CENTERS.map((z) => addBenchBay(-1, z, BAY_LENGTH));
+
+  // --- 路線図（左壁, bay0の上） ---
+  const routeMapTexNormal = makeRouteMapTexture(false);
+  const routeMapTexAnomaly = makeRouteMapTexture(true);
+  const routeMapMat = new THREE.MeshBasicMaterial({ map: routeMapTexNormal, toneMapped: false });
+  mountPlate(-1, leftBays[0].centerZ, 0.75, 0.3, routeMapMat);
+
+  // --- 車内広告（右壁, bay1の上） ---
+  const adTexNormal = makeTrainAdTexture(false);
+  const adTexAnomaly = makeTrainAdTexture(true);
+  const adMat = new THREE.MeshBasicMaterial({ map: adTexNormal, toneMapped: false });
+  mountPlate(1, rightBays[1].centerZ, 0.62, 0.3, adMat);
+
+  // --- 非常停止ボタン（右壁, bay0とbay1の間の継ぎ目） ---
+  const BUTTON_Z = (rightBays[0].centerZ - BAY_LENGTH / 2 + (rightBays[1].centerZ + BAY_LENGTH / 2)) / 2;
+  const emergencyButton = buildEmergencyButton();
+  emergencyButton.group.position.set(halfWidthAt(BUTTON_Z) - 0.03, 1.3, BUTTON_Z);
+  emergencyButton.group.rotation.y = -Math.PI / 2;
+  group.add(emergencyButton.group);
+
+  // --- 優先席の表示（右壁, bay3の上） ---
+  const PRIORITY_Z = rightBays[3].centerZ;
+  const prioritySignTexNormal = makePrioritySeatTexture(false);
+  const prioritySignTexAnomaly = makePrioritySeatTexture(true);
+  const prioritySignMat = new THREE.MeshBasicMaterial({ map: prioritySignTexNormal, toneMapped: false });
+  mountPlate(1, PRIORITY_Z, 0.4, 0.2, prioritySignMat);
+
+  // --- 乗客が増える座席（左壁, bay4） ---
+  const PASSENGER_SEAT_Z = leftBays[4].centerZ;
+  const extraPassenger = buildTrainPassengerFigure();
+  extraPassenger.scale.setScalar(0.92);
+  extraPassenger.position.set(-(halfWidthAt(PASSENGER_SEAT_Z) - 0.32), 0.42, PASSENGER_SEAT_Z - 0.8);
+  extraPassenger.rotation.y = -Math.PI / 2;
+  extraPassenger.visible = false;
+  group.add(extraPassenger);
+
+  // --- 車窓（外に人影, 右壁bay5を流用） ---
+  const WINDOW_FIGURE_Z = rightBays[5].centerZ;
+  const outsideFigure = buildTrainPassengerFigure();
+  outsideFigure.scale.set(0.4, 0.4, 0.15);
+  outsideFigure.position.set(halfWidthAt(WINDOW_FIGURE_Z) + 0.3, 1.1, WINDOW_FIGURE_Z);
+  outsideFigure.visible = false;
+  group.add(outsideFigure);
+  let windowFigureHiddenByProximity = false;
+
+  // --- 車窓（反射に人影, 左壁bay6を流用） ---
+  const WINDOW_REFLECT_Z = leftBays[6].centerZ;
+  const reflectFigure = buildTrainPassengerFigure();
+  reflectFigure.scale.set(0.5, 0.5, 0.02);
+  reflectFigure.position.set(-(halfWidthAt(WINDOW_REFLECT_Z) - 0.1), 0.55, WINDOW_REFLECT_Z);
+  reflectFigure.rotation.y = Math.PI / 2;
+  reflectFigure.visible = false;
+  group.add(reflectFigure);
+
+  // --- ボスの乗客（連結部手前） ---
+  const BOSS_Z = DOOR_Z + 2.4;
+  const anotherPassenger = buildTrainPassengerFigure();
+  anotherPassenger.position.set(0, 0, BOSS_Z);
+  anotherPassenger.visible = false;
+  group.add(anotherPassenger);
 
   // --- ドア付近の立席スペースに握り棒 ---
   for (const z of [11, -21.5]) {
