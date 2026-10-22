@@ -2729,3 +2729,529 @@ export function buildMascotCostumeFigure(faceTex: THREE.Texture): MascotCostumeH
   group.add(bigHead, facePlane);
   return { group, faceMat };
 }
+
+// ============================================================
+// STAGE08「廃村」用テクスチャ・小道具
+// ============================================================
+
+export function makeVillagePathTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 128);
+  noiseFill(ctx, 128, 128, "#453a2c", 10);
+  ctx.fillStyle = "rgba(30,24,16,0.3)";
+  for (let i = 0; i < 18; i++) {
+    const x = Math.random() * 128;
+    const y = Math.random() * 128;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 3 + Math.random() * 6, 2 + Math.random() * 4, Math.random() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // 荷車の轍
+  ctx.strokeStyle = "rgba(60,50,36,0.35)";
+  ctx.lineWidth = 4;
+  for (const x of [40, 88]) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 128);
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(1, 20);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 茅葺き屋根風のテクスチャ */
+export function makeVillageRoofTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(128, 128);
+  noiseFill(ctx, 128, 128, "#3a3226", 10);
+  ctx.strokeStyle = "rgba(20,16,10,0.5)";
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= 128; x += 3) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x + (Math.random() - 0.5) * 6, 128);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = "rgba(10,8,4,0.4)";
+  ctx.lineWidth = 3;
+  for (let y = 16; y < 128; y += 22) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(128, y);
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** 家の窓。withFaceで暗闇の奥に蒼白い顔が覗く異変を描き足す */
+export function makeVillageWindowTexture(withFace: boolean): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(96, 96);
+  const grad = ctx.createLinearGradient(0, 0, 0, 96);
+  grad.addColorStop(0, "#07080c");
+  grad.addColorStop(1, "#111018");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 96, 96);
+  if (withFace) {
+    ctx.fillStyle = "#d8d4c8";
+    ctx.beginPath();
+    ctx.ellipse(48, 50, 16, 20, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#15131a";
+    ctx.beginPath();
+    ctx.ellipse(41, 46, 2.5, 3.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(55, 46, 2.5, 3.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#15131a";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(42, 58);
+    ctx.lineTo(54, 58);
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+export interface VillageHouseHandle {
+  group: THREE.Group;
+  windowMat: THREE.MeshBasicMaterial;
+}
+
+/** 廃屋。windowMatのmapを差し替えると窓の奥に顔が覗く異変になる */
+export function buildVillageHouse(wallTex: THREE.Texture, roofTex: THREE.Texture, windowTex: THREE.Texture): VillageHouseHandle {
+  const group = new THREE.Group();
+  wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping;
+  wallTex.repeat.set(2, 1.6);
+  const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.88 });
+  const width = 1.15;
+  const depth = 0.9;
+  const wallHeight = 1.3;
+
+  const body = new THREE.Mesh(new THREE.BoxGeometry(width, wallHeight, depth), wallMat);
+  body.position.y = wallHeight / 2;
+
+  roofTex.wrapS = roofTex.wrapT = THREE.RepeatWrapping;
+  roofTex.repeat.set(2, 2);
+  const roofMat = new THREE.MeshStandardMaterial({ map: roofTex, roughness: 0.92 });
+  const rise = 0.42;
+  const slopeLen = Math.sqrt((width / 2) ** 2 + rise ** 2) + 0.06;
+  const riseAngle = Math.atan2(rise, width / 2);
+  const roofL = new THREE.Mesh(new THREE.BoxGeometry(slopeLen, 0.05, depth + 0.18), roofMat);
+  roofL.position.set(-width / 4, wallHeight + rise / 2, 0);
+  roofL.rotation.z = riseAngle;
+  const roofR = new THREE.Mesh(new THREE.BoxGeometry(slopeLen, 0.05, depth + 0.18), roofMat);
+  roofR.position.set(width / 4, wallHeight + rise / 2, 0);
+  roofR.rotation.z = -riseAngle;
+  const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, depth + 0.18), roofMat);
+  ridge.position.set(0, wallHeight + rise, 0);
+
+  const doorMat = new THREE.MeshStandardMaterial({ color: 0x1a130c, roughness: 0.8 });
+  const door = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.58), doorMat);
+  door.position.set(-0.26, 0.29, depth / 2 + 0.005);
+
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x201810, roughness: 0.6 });
+  const winW = 0.3;
+  const winH = 0.3;
+  const winY = wallHeight * 0.62;
+  const winX = 0.26;
+  const fTop = new THREE.Mesh(new THREE.BoxGeometry(winW + 0.04, 0.03, 0.03), frameMat);
+  fTop.position.set(winX, winY + winH / 2, depth / 2);
+  const fBottom = new THREE.Mesh(new THREE.BoxGeometry(winW + 0.04, 0.03, 0.03), frameMat);
+  fBottom.position.set(winX, winY - winH / 2, depth / 2);
+  const fLeft = new THREE.Mesh(new THREE.BoxGeometry(0.03, winH, 0.03), frameMat);
+  fLeft.position.set(winX - winW / 2, winY, depth / 2);
+  const fRight = new THREE.Mesh(new THREE.BoxGeometry(0.03, winH, 0.03), frameMat);
+  fRight.position.set(winX + winW / 2, winY, depth / 2);
+
+  const windowMat = new THREE.MeshBasicMaterial({ map: windowTex, toneMapped: false });
+  const windowGlass = new THREE.Mesh(new THREE.PlaneGeometry(winW, winH), windowMat);
+  windowGlass.position.set(winX, winY, depth / 2 + 0.002);
+
+  group.add(body, roofL, roofR, ridge, door, fTop, fBottom, fLeft, fRight, windowGlass);
+  return { group, windowMat };
+}
+
+/**
+ * 骨組み+一部だけ板が残った朽ちた木塀。STAGE07の錆びたフェンスと同じ思想で、
+ * 隙間から奥の暗闇が見える廃村らしい境界にする。ローカルZ方向に伸びる。
+ */
+export function buildWoodenFenceWall(length: number, height: number, woodTex: THREE.Texture): THREE.Group {
+  const group = new THREE.Group();
+  const woodMat = new THREE.MeshStandardMaterial({ color: 0x8a7050, roughness: 0.85 });
+  const woodMatDark = new THREE.MeshStandardMaterial({ color: 0x5a4832, roughness: 0.9 });
+  woodTex.wrapS = woodTex.wrapT = THREE.RepeatWrapping;
+  woodTex.repeat.set(1, 2);
+  const slatMat = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.9, side: THREE.DoubleSide });
+
+  const postSpacing = 1.3;
+  const postCount = Math.max(2, Math.round(length / postSpacing) + 1);
+  const postGeo = new THREE.BoxGeometry(0.08, height, 0.08);
+  for (let i = 0; i < postCount; i++) {
+    const z = -length / 2 + (i / (postCount - 1)) * length;
+    const post = new THREE.Mesh(postGeo, i % 4 === 0 ? woodMatDark : woodMat);
+    post.position.set(0, height / 2, z);
+    if (i % 6 === 2) post.rotation.z = 0.07;
+    group.add(post);
+  }
+
+  const railGeo = new THREE.BoxGeometry(0.04, 0.05, length);
+  for (const ry of [height * 0.3, height * 0.75]) {
+    const rail = new THREE.Mesh(railGeo, woodMat);
+    rail.position.set(0, ry, 0);
+    group.add(rail);
+  }
+
+  const segLen = length / (postCount - 1);
+  for (let i = 0; i < postCount - 1; i++) {
+    if (i % 4 === 2) continue;
+    const z0 = -length / 2 + (i / (postCount - 1)) * length;
+    const slatH = height * (i % 3 === 0 ? 0.7 : 0.88);
+    const slat = new THREE.Mesh(new THREE.PlaneGeometry(segLen * 0.85, slatH), slatMat);
+    slat.position.set(0.012, slatH / 2 + 0.03, z0 + segLen / 2);
+    group.add(slat);
+  }
+
+  return group;
+}
+
+/** 井戸（石組みの輪+小さな屋根） */
+export function buildWell(): THREE.Group {
+  const group = new THREE.Group();
+  const stoneMat = new THREE.MeshStandardMaterial({ color: 0x6a665c, roughness: 0.9 });
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.35, 0.4, 14), stoneMat);
+  rim.position.y = 0.2;
+  const rimTop = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.03, 6, 16), stoneMat);
+  rimTop.rotation.x = Math.PI / 2;
+  rimTop.position.y = 0.4;
+  const woodMat = new THREE.MeshStandardMaterial({ color: 0x4a3a28, roughness: 0.85 });
+  const postL = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.9, 6), woodMat);
+  postL.position.set(-0.28, 0.65, 0);
+  const postR = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.9, 6), woodMat);
+  postR.position.set(0.28, 0.65, 0);
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.66, 6), woodMat);
+  beam.rotation.z = Math.PI / 2;
+  beam.position.set(0, 1.08, 0);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.26, 4), new THREE.MeshStandardMaterial({ color: 0x3a3226, roughness: 0.9 }));
+  roof.rotation.y = Math.PI / 4;
+  roof.position.y = 1.25;
+  const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.1, 8), woodMat);
+  bucket.position.y = 0.85;
+  group.add(rim, rimTop, postL, postR, beam, roof, bucket);
+  return group;
+}
+
+/** 地蔵（丸みのある石像+赤い前掛け） */
+export function buildJizoStatue(): THREE.Group {
+  const group = new THREE.Group();
+  const stoneMat = new THREE.MeshStandardMaterial({ color: 0x8a8678, roughness: 0.9 });
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.06, 12), stoneMat);
+  base.position.y = 0.03;
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.32, 6, 10), stoneMat);
+  body.position.y = 0.3;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.09, 14, 12), stoneMat);
+  head.position.y = 0.52;
+  const bibMat = new THREE.MeshStandardMaterial({ color: 0x9a2a2a, roughness: 0.8 });
+  const bib = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.2, 10), bibMat);
+  bib.position.y = 0.36;
+  group.add(base, body, head, bib);
+  return group;
+}
+
+/** 案山子の顔。showFaceで布袋に粗く描かれた顔が浮かび上がる異変になる */
+export function makeScarecrowFaceTexture(showFace: boolean): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(96, 96);
+  noiseFill(ctx, 96, 96, "#cfc49e", 10);
+  ctx.strokeStyle = "rgba(90,80,50,0.4)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(2, 2, 92, 92);
+  if (showFace) {
+    ctx.strokeStyle = "#2a2018";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(28, 38);
+    ctx.lineTo(40, 48);
+    ctx.moveTo(40, 38);
+    ctx.lineTo(28, 48);
+    ctx.moveTo(56, 38);
+    ctx.lineTo(68, 48);
+    ctx.moveTo(68, 38);
+    ctx.lineTo(56, 48);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(30, 68);
+    ctx.quadraticCurveTo(48, 54, 66, 68);
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+export interface ScarecrowHandle {
+  group: THREE.Group;
+  faceMat: THREE.MeshBasicMaterial;
+}
+
+/** 案山子。faceMatのmapを差し替えて「顔が浮かび上がる」異変を表現する */
+export function buildScarecrow(initialFaceTex: THREE.Texture): ScarecrowHandle {
+  const group = new THREE.Group();
+  const woodMat = new THREE.MeshStandardMaterial({ color: 0x5a4428, roughness: 0.9 });
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 1.3, 6), woodMat);
+  post.position.y = 0.65;
+  const crossbar = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6), woodMat);
+  crossbar.rotation.z = Math.PI / 2;
+  crossbar.position.y = 1.0;
+
+  const strawMat = new THREE.MeshStandardMaterial({ color: 0xc9a84a, roughness: 1 });
+  const bodyStraw = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.13, 0.55, 8), strawMat);
+  bodyStraw.position.y = 0.75;
+  const sackMat = new THREE.MeshStandardMaterial({ color: 0xcfc49e, roughness: 0.95 });
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 10), sackMat);
+  head.position.y = 1.15;
+
+  const faceMat = new THREE.MeshBasicMaterial({ map: initialFaceTex, toneMapped: false });
+  const facePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.2), faceMat);
+  facePlane.position.set(0, 1.15, 0.11);
+
+  const sleeveMat = strawMat;
+  const sleeveGeo = new THREE.CylinderGeometry(0.04, 0.03, 0.4, 6);
+  const sleeveL = new THREE.Mesh(sleeveGeo, sleeveMat);
+  sleeveL.position.set(-0.32, 0.98, 0);
+  sleeveL.rotation.z = 0.3;
+  const sleeveR = new THREE.Mesh(sleeveGeo, sleeveMat);
+  sleeveR.position.set(0.32, 0.98, 0);
+  sleeveR.rotation.z = -0.3;
+
+  group.add(post, crossbar, bodyStraw, head, facePlane, sleeveL, sleeveR);
+  return { group, faceMat };
+}
+
+/** 布に浮かぶ人影。withShadowで洗濯物の奥に人影が透ける異変を描き足す */
+export function makeLaundrySheetTexture(withShadow: boolean): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(96, 128);
+  ctx.fillStyle = "#d8d4c4";
+  ctx.fillRect(0, 0, 96, 128);
+  ctx.strokeStyle = "rgba(160,156,140,0.5)";
+  ctx.lineWidth = 2;
+  for (let y = 10; y < 128; y += 18) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(96, y + 4);
+    ctx.stroke();
+  }
+  if (withShadow) {
+    ctx.fillStyle = "rgba(20,18,16,0.55)";
+    ctx.beginPath();
+    ctx.ellipse(48, 42, 14, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(26, 120);
+    ctx.lineTo(34, 60);
+    ctx.lineTo(62, 60);
+    ctx.lineTo(70, 120);
+    ctx.closePath();
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+export interface LaundryLineHandle {
+  group: THREE.Group;
+  sheetMat: THREE.MeshBasicMaterial;
+}
+
+/** 物干し竿。sheetMatのmapを差し替えて「人影が透ける」異変を表現する */
+export function buildLaundryLine(initialSheetTex: THREE.Texture): LaundryLineHandle {
+  const group = new THREE.Group();
+  const poleMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.5, metalness: 0.5 });
+  const poleL = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.4, 6), poleMat);
+  poleL.position.set(-0.55, 0.7, 0);
+  const poleR = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.4, 6), poleMat);
+  poleR.position.set(0.55, 0.7, 0);
+  const lineMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.6, metalness: 0.4 });
+  const line = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 1.1, 6), lineMat);
+  line.rotation.z = Math.PI / 2;
+  line.position.set(0, 1.35, 0);
+
+  const plainSheetMat = new THREE.MeshBasicMaterial({ color: 0xe8e4d4, toneMapped: false, side: THREE.DoubleSide });
+  const sheetA = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.5), plainSheetMat);
+  sheetA.position.set(-0.35, 1.0, 0);
+  const sheetC = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.4), plainSheetMat.clone());
+  sheetC.position.set(0.35, 1.05, 0);
+
+  const sheetMat = new THREE.MeshBasicMaterial({ map: initialSheetTex, toneMapped: false, side: THREE.DoubleSide });
+  const sheetB = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.5), sheetMat);
+  sheetB.position.set(0, 1.0, 0);
+
+  group.add(poleL, poleR, line, sheetA, sheetB, sheetC);
+  return { group, sheetMat };
+}
+
+/** 村の掲示板。variantで通常の張り紙/「あなたの写真」が貼られた異変を切り替える */
+export function makeVillageBulletinTexture(variant: "normal" | "photo"): THREE.CanvasTexture {
+  const { canvas, ctx } = createCanvas(160, 112);
+  ctx.fillStyle = "#4a3a28";
+  ctx.fillRect(0, 0, 160, 112);
+  ctx.strokeStyle = "#241a10";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, 156, 108);
+
+  if (variant === "normal") {
+    const notices = [
+      ["寄り合いのお知らせ", "今夜、集会所にて"],
+      ["害獣注意", "日没後の外出は控えること"],
+      ["道普請", "村総出にて行う"],
+    ];
+    let y = 14;
+    for (const [title, body] of notices) {
+      ctx.fillStyle = "#e8e0c8";
+      ctx.fillRect(10, y, 140, 28);
+      ctx.fillStyle = "#1c1810";
+      ctx.font = "bold 11px sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(title, 14, y + 12);
+      ctx.font = "9px sans-serif";
+      ctx.fillText(body, 14, y + 23);
+      y += 34;
+    }
+  } else {
+    ctx.fillStyle = "#e8e0c8";
+    ctx.fillRect(44, 12, 72, 88);
+    ctx.fillStyle = "#15131a";
+    ctx.fillRect(50, 18, 60, 60);
+    // 粗いシルエットの肖像（プレイヤー自身を思わせる）
+    ctx.fillStyle = "#c9b9a3";
+    ctx.beginPath();
+    ctx.ellipse(80, 40, 11, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(62, 78);
+    ctx.lineTo(68, 52);
+    ctx.lineTo(92, 52);
+    ctx.lineTo(98, 78);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#2a2018";
+    ctx.font = "9px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("おかえりなさい", 80, 92);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+export interface VillageBulletinHandle {
+  group: THREE.Group;
+  boardMat: THREE.MeshBasicMaterial;
+}
+
+/** 村の掲示板。boardMatのmapを差し替えて張り紙の異変を表現する */
+export function buildVillageBulletinBoard(initialTex: THREE.Texture): VillageBulletinHandle {
+  const group = new THREE.Group();
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x3a2c1c, roughness: 0.85 });
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.5, 0.04), frameMat);
+  frame.position.y = 1.0;
+  const boardMat = new THREE.MeshBasicMaterial({ map: initialTex, toneMapped: false });
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.42), boardMat);
+  board.position.set(0, 1.0, 0.023);
+  const postGeo = new THREE.CylinderGeometry(0.03, 0.03, 1.0, 6);
+  const postL = new THREE.Mesh(postGeo, frameMat);
+  postL.position.set(-0.28, 0.5, 0);
+  const postR = new THREE.Mesh(postGeo, frameMat);
+  postR.position.set(0.28, 0.5, 0);
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.05, 0.2), frameMat);
+  roof.position.set(0, 1.27, 0);
+  group.add(frame, board, postL, postR, roof);
+  return { group, boardMat };
+}
+
+export interface VillageBellHandle {
+  group: THREE.Group;
+  ropePivot: THREE.Object3D;
+}
+
+/** 村はずれの鐘楼。ropePivotを揺らすと「鐘が鳴る」異変の演出になる */
+export function buildVillageBell(): VillageBellHandle {
+  const group = new THREE.Group();
+  const woodMat = new THREE.MeshStandardMaterial({ color: 0x4a3828, roughness: 0.88 });
+  const postPositions: [number, number][] = [
+    [-0.32, -0.22],
+    [0.32, -0.22],
+    [-0.32, 0.22],
+    [0.32, 0.22],
+  ];
+  for (const [px, pz] of postPositions) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.045, 1.8, 6), woodMat);
+    post.position.set(px, 0.9, pz);
+    group.add(post);
+  }
+  const beamGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.64, 6);
+  const beamZ = new THREE.Mesh(beamGeo, woodMat);
+  beamZ.rotation.x = Math.PI / 2;
+  beamZ.position.set(-0.32, 1.78, 0);
+  const beamZ2 = beamZ.clone();
+  beamZ2.position.x = 0.32;
+  const beamX = new THREE.Mesh(beamGeo, woodMat);
+  beamX.rotation.z = Math.PI / 2;
+  beamX.position.set(0, 1.78, -0.22);
+  const beamX2 = beamX.clone();
+  beamX2.position.z = 0.22;
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.3, 4), new THREE.MeshStandardMaterial({ color: 0x3a3226, roughness: 0.9 }));
+  roof.rotation.y = Math.PI / 4;
+  roof.position.y = 2.0;
+
+  const ropePivot = new THREE.Object3D();
+  ropePivot.position.set(0, 1.76, 0);
+  const bellMat = new THREE.MeshStandardMaterial({ color: 0x6a5a3a, roughness: 0.4, metalness: 0.6 });
+  const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.1, 0.3, 12), bellMat);
+  bell.position.y = -0.2;
+  ropePivot.add(bell);
+
+  group.add(beamZ, beamZ2, beamX, beamX2, roof, ropePivot);
+  return { group, ropePivot };
+}
+
+export interface PaperLanternHandle {
+  group: THREE.Group;
+  lampMat: THREE.MeshStandardMaterial;
+  light: THREE.PointLight;
+}
+
+/** 吊り提灯。lampMatのemissiveを差し替えると色の異変になる */
+export function buildPaperLantern(): PaperLanternHandle {
+  const group = new THREE.Group();
+  const lampMat = new THREE.MeshStandardMaterial({ color: 0xf0d8a0, emissive: 0xffb347, emissiveIntensity: 1.1, roughness: 0.6 });
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 10), lampMat);
+  body.scale.y = 1.2;
+  const ribMat = new THREE.MeshStandardMaterial({ color: 0x1c1410, roughness: 0.7 });
+  for (let i = 0; i < 4; i++) {
+    const rib = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.004, 4, 16), ribMat);
+    rib.rotation.y = (i / 4) * Math.PI;
+    group.add(rib);
+  }
+  const capTop = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.05, 0.04, 8), ribMat);
+  capTop.position.y = 0.17;
+  const capBottom = capTop.clone();
+  capBottom.position.y = -0.17;
+  const light = new THREE.PointLight(0xffb347, 1.2, 2.4, 2);
+  light.position.set(0, 0, 0);
+  group.add(body, capTop, capBottom, light);
+  return { group, lampMat, light };
+}
+
+const VILLAGER_COLORS: HumanoidColors = { skin: 0xc9b9a3, outfit: 0x3a4436, legs: 0x2a2822 };
+
+/** 村人風の人影（STAGE08用） */
+export function buildVillagerFigure(): THREE.Group {
+  return buildHumanoidFigure(VILLAGER_COLORS);
+}
