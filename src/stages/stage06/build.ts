@@ -94,7 +94,8 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
     const poleA = buildStanchionPole(1.9);
     const poleB = buildStanchionPole(1.9);
     const x = side === 1 ? hw - 0.22 : -(hw - 0.22);
-    const xWin = side === 1 ? hw - 0.01 : -(hw - 0.01);
+    // 窓の奥に流れる夜景プレーンが壁本体(x=hw)より奥に出て隠れないよう、窓ごと壁内側へ下げておく
+    const xWin = side === 1 ? hw - 0.15 : -(hw - 0.15);
     const xPole = side === 1 ? hw - 0.05 : -(hw - 0.05);
     // buildTrainBenchRunは奥行き(length)が既にローカルZ軸方向に沿っているため、
     // 壁沿い(ワールドZ軸方向)に向けるには回転させず、背もたれの左右だけを反転する。
@@ -122,6 +123,9 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
 
   const rightBays = BAY_CENTERS.map((z) => addBenchBay(1, z, BAY_LENGTH));
   const leftBays = BAY_CENTERS.map((z) => addBenchBay(-1, z, BAY_LENGTH));
+  // 窓のローカルX軸は左右の壁で逆向き(ミラー)になっているため、
+  // 両側のテクスチャが同じ向きに流れて見えるよう符号を逆にする
+  const TRAIN_SCENERY_SPEED = 0.5;
 
   // --- 路線図（左壁, bay0の上） ---
   const routeMapTexNormal = makeRouteMapTexture(false);
@@ -208,6 +212,9 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
     height: 0.15,
     y: 2.25,
   });
+
+  // --- 走行音ループ（最終電車が走っている雰囲気） ---
+  audio.startTrainRunning();
 
   // --- 状態管理 ---
   let heartbeatTimer = 0;
@@ -319,9 +326,13 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
           audio.playElectricHum();
         }
       }
+
+      for (const bay of rightBays) bay.window.sceneryTex.offset.x += dt * TRAIN_SCENERY_SPEED;
+      for (const bay of leftBays) bay.window.sceneryTex.offset.x -= dt * TRAIN_SCENERY_SPEED;
     },
 
     dispose() {
+      audio.stopTrainRunning();
       wallTex.dispose();
       floorTex.dispose();
       ceilTex.dispose();
@@ -333,6 +344,7 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
       prioritySignTexNormal.dispose();
       prioritySignTexAnomaly.dispose();
       for (const t of arrowTextures) t.dispose();
+      for (const bay of [...rightBays, ...leftBays]) bay.window.sceneryTex.dispose();
     },
   };
 

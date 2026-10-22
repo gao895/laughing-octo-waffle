@@ -1797,26 +1797,105 @@ export function buildEmergencyButton(): EmergencyButtonHandle {
   return { group, lampMat, light };
 }
 
+/** 車窓の外に流れる夜景（走行中の雰囲気を出すため、使う側でオフセットをスクロールさせる） */
+export function makeTrainSceneryTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d")!;
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, "#03040a");
+  grad.addColorStop(0.7, "#070910");
+  grad.addColorStop(1, "#0d1119");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // 遠景のビル影と窓明かり（タイルしても違和感の少ない低いシルエット）
+  let seed = 11;
+  const rand = () => {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  };
+  let x = 0;
+  while (x < canvas.width) {
+    const w = 12 + rand() * 24;
+    const h = 18 + rand() * 55;
+    ctx.fillStyle = "rgba(5,6,11,0.95)";
+    ctx.fillRect(x, canvas.height - h, w, h);
+    const winCount = Math.floor(h / 13);
+    for (let i = 0; i < winCount; i++) {
+      if (rand() > 0.55) {
+        ctx.fillStyle = `rgba(255,${200 + Math.floor(rand() * 40)},130,${0.35 + rand() * 0.35})`;
+        ctx.fillRect(x + 2 + rand() * (w - 6), canvas.height - h + 4 + i * 12, 2, 3);
+      }
+    }
+    x += w + 3 + rand() * 7;
+  }
+
+  // 流れる光の筋（走行時のモーションブラー表現）
+  for (let i = 0; i < 10; i++) {
+    const y = canvas.height * (0.3 + rand() * 0.55);
+    const w = 20 + rand() * 60;
+    const px = rand() * canvas.width;
+    const streak = ctx.createLinearGradient(px, y, px + w, y);
+    streak.addColorStop(0, "rgba(255,230,180,0)");
+    streak.addColorStop(0.5, `rgba(255,230,180,${0.15 + rand() * 0.2})`);
+    streak.addColorStop(1, "rgba(255,230,180,0)");
+    ctx.fillStyle = streak;
+    ctx.fillRect(px, y, w, 1.5);
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 export interface TrainWindowHandle {
   group: THREE.Group;
   glassMat: THREE.MeshStandardMaterial;
+  sceneryMat: THREE.MeshBasicMaterial;
+  sceneryTex: THREE.CanvasTexture;
 }
 
-/** 車窓（暗闇に沈んだガラス窓。夜は鏡のように映り込む） */
+/** 車窓（中が空いた縁+外を流れる夜景+半透明ガラスの3層構成） */
 export function buildTrainWindow(width: number, height: number): TrainWindowHandle {
   const group = new THREE.Group();
   const frameMat = new THREE.MeshStandardMaterial({ color: 0x7a7870, roughness: 0.4, metalness: 0.5 });
-  const frame = new THREE.Mesh(new THREE.BoxGeometry(width + 0.06, height + 0.06, 0.03), frameMat);
-  group.add(frame);
+  const bw = 0.05;
+  const frameTop = new THREE.Mesh(new THREE.BoxGeometry(width + bw * 2, bw, 0.04), frameMat);
+  frameTop.position.y = height / 2 + bw / 2;
+  const frameBottom = new THREE.Mesh(new THREE.BoxGeometry(width + bw * 2, bw, 0.04), frameMat);
+  frameBottom.position.y = -(height / 2 + bw / 2);
+  const frameLeft = new THREE.Mesh(new THREE.BoxGeometry(bw, height, 0.04), frameMat);
+  frameLeft.position.x = -(width / 2 + bw / 2);
+  const frameRight = new THREE.Mesh(new THREE.BoxGeometry(bw, height, 0.04), frameMat);
+  frameRight.position.x = width / 2 + bw / 2;
+  group.add(frameTop, frameBottom, frameLeft, frameRight);
+
+  // 外側: 流れる夜景（窓の奥＝ローカルZ負方向に配置）
+  const sceneryTex = makeTrainSceneryTexture();
+  sceneryTex.repeat.set(Math.max(1, width / 1.1), 1);
+  const sceneryMat = new THREE.MeshBasicMaterial({ map: sceneryTex, toneMapped: false });
+  const scenery = new THREE.Mesh(new THREE.PlaneGeometry(width, height), sceneryMat);
+  scenery.position.z = -0.05;
+  group.add(scenery);
+
+  // 内側: 半透明のガラス（夜景が透けて見える）
   const glassMat = new THREE.MeshStandardMaterial({
-    color: 0x05060a,
-    roughness: 0.1,
-    metalness: 0.6,
+    color: 0x0c1420,
+    roughness: 0.15,
+    metalness: 0.5,
+    transparent: true,
+    opacity: 0.45,
+    depthWrite: false,
   });
   const glass = new THREE.Mesh(new THREE.PlaneGeometry(width, height), glassMat);
   glass.position.z = 0.02;
   group.add(glass);
-  return { group, glassMat };
+
+  return { group, glassMat, sceneryMat, sceneryTex };
 }
 
 const TRAIN_PASSENGER_COLORS: HumanoidColors = { skin: 0xc9b9a3, outfit: 0x24282e, legs: 0x1a1a1e };

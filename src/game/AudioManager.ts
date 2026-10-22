@@ -16,6 +16,7 @@ export class AudioManager {
   private noiseBuffer: AudioBuffer | null = null;
   private ambienceSource: AudioBufferSourceNode | null = null;
   private ambienceFilter: BiquadFilterNode | null = null;
+  private trainLoopSource: AudioBufferSourceNode | null = null;
   private footstepToggle = false;
 
   /** ユーザー操作（クリック等）のタイミングで呼び、AudioContextを開始する */
@@ -99,6 +100,67 @@ export class AudioManager {
     this.ambienceSource?.stop();
     this.ambienceSource = null;
     this.ambienceFilter = null;
+  }
+
+  private buildTrainLoopBuffer(seconds: number): AudioBuffer {
+    const ctx = this.ctx!;
+    const sr = ctx.sampleRate;
+    const length = Math.floor(sr * seconds);
+    const buffer = ctx.createBuffer(1, length, sr);
+    const data = buffer.getChannelData(0);
+
+    // 走行音の土台になる低域の暗騒音（ブラウンノイズ）
+    let last = 0;
+    for (let i = 0; i < length; i++) {
+      const white = Math.random() * 2 - 1;
+      last = (last + 0.02 * white) / 1.02;
+      data[i] = last * 3.2;
+    }
+
+    // レール継ぎ目の「ガタンゴトン」をループ内に等間隔で重ねる
+    const addClack = (centerSample: number) => {
+      const dur = Math.floor(sr * 0.06);
+      for (let j = 0; j < dur; j++) {
+        const idx = Math.floor(centerSample + j);
+        if (idx < 0 || idx >= length) continue;
+        const env = Math.exp(-j / (sr * 0.012));
+        data[idx] += (Math.random() * 2 - 1) * env * 0.9;
+      }
+    };
+    const beatCount = 6;
+    const beatInterval = length / beatCount;
+    for (let i = 0; i < beatCount; i++) {
+      const base = i * beatInterval;
+      addClack(base);
+      addClack(base + sr * 0.14);
+    }
+
+    for (let i = 0; i < length; i++) {
+      data[i] = Math.max(-1, Math.min(1, data[i]));
+    }
+    return buffer;
+  }
+
+  /** STAGE06専用: 電車が走行しているループSEを開始 */
+  startTrainRunning() {
+    if (!this.ctx || this.trainLoopSource) return;
+    const buffer = this.buildTrainLoopBuffer(4);
+    const src = this.ctx.createBufferSource();
+    src.buffer = buffer;
+    src.loop = true;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 600;
+    const gain = this.ctx.createGain();
+    gain.gain.value = 0.55;
+    src.connect(filter).connect(gain).connect(this.ambienceGain);
+    src.start();
+    this.trainLoopSource = src;
+  }
+
+  stopTrainRunning() {
+    this.trainLoopSource?.stop();
+    this.trainLoopSource = null;
   }
 
   playFootstep() {
@@ -273,6 +335,7 @@ export class AudioManager {
 
   dispose() {
     this.stopAmbience();
+    this.stopTrainRunning();
     this.ctx?.close();
     this.ctx = null;
   }
