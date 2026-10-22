@@ -12,6 +12,9 @@ import {
   makePrioritySeatTexture,
   makeArrowSignTexture,
   buildTrainSeatBench,
+  buildTrainBenchRun,
+  buildStanchionPole,
+  buildCeilingLightStrip,
   buildStrapRow,
   buildEmergencyButton,
   buildTrainWindow,
@@ -79,8 +82,8 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
   routeMapPlane.position.set(-(halfWidthAt(ROUTE_MAP_Z) - 0.03), 1.85, ROUTE_MAP_Z);
   routeMapPlane.rotation.y = Math.PI / 2;
   group.add(routeMapPlane);
-  const routeMapWindow = buildTrainWindow(0.55, 0.42);
-  routeMapWindow.group.position.set(-(halfWidthAt(ROUTE_MAP_Z) - 0.01), 1.5, ROUTE_MAP_Z);
+  const routeMapWindow = buildTrainWindow(0.75, 0.7);
+  routeMapWindow.group.position.set(-(halfWidthAt(ROUTE_MAP_Z) - 0.01), 1.55, ROUTE_MAP_Z);
   routeMapWindow.group.rotation.y = Math.PI / 2;
   group.add(routeMapWindow.group);
 
@@ -93,8 +96,8 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
   adPlane.position.set(halfWidthAt(AD_Z) - 0.03, 1.85, AD_Z);
   adPlane.rotation.y = -Math.PI / 2;
   group.add(adPlane);
-  const adWindow = buildTrainWindow(0.55, 0.42);
-  adWindow.group.position.set(halfWidthAt(AD_Z) - 0.01, 1.5, AD_Z);
+  const adWindow = buildTrainWindow(0.75, 0.7);
+  adWindow.group.position.set(halfWidthAt(AD_Z) - 0.01, 1.55, AD_Z);
   adWindow.group.rotation.y = -Math.PI / 2;
   group.add(adWindow.group);
 
@@ -118,10 +121,15 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
   prioritySignPlane.position.set(halfWidthAt(PRIORITY_Z) - 0.03, 1.75, PRIORITY_Z);
   prioritySignPlane.rotation.y = -Math.PI / 2;
   group.add(prioritySignPlane);
-  const priorityWindow = buildTrainWindow(0.55, 0.42);
-  priorityWindow.group.position.set(halfWidthAt(PRIORITY_Z) - 0.01, 1.5, PRIORITY_Z);
+  const priorityWindow = buildTrainWindow(0.75, 0.7);
+  priorityWindow.group.position.set(halfWidthAt(PRIORITY_Z) - 0.01, 1.55, PRIORITY_Z);
   priorityWindow.group.rotation.y = -Math.PI / 2;
   group.add(priorityWindow.group);
+  const priorityPoleA = buildStanchionPole(1.9);
+  priorityPoleA.position.set(halfWidthAt(PRIORITY_Z) - 0.05, 0, PRIORITY_Z - 0.5);
+  const priorityPoleB = buildStanchionPole(1.9);
+  priorityPoleB.position.set(halfWidthAt(PRIORITY_Z) - 0.05, 0, PRIORITY_Z + 0.5);
+  group.add(priorityPoleA, priorityPoleB);
 
   // --- 乗客が増える座席（z=-6, 左壁） ---
   const PASSENGER_SEAT_Z = -6;
@@ -135,28 +143,33 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
   extraPassenger.rotation.y = -Math.PI / 2;
   extraPassenger.visible = false;
   group.add(extraPassenger);
-  const passengerWindow = buildTrainWindow(0.55, 0.42);
-  passengerWindow.group.position.set(-(halfWidthAt(PASSENGER_SEAT_Z) - 0.01), 1.5, PASSENGER_SEAT_Z);
+  const passengerWindow = buildTrainWindow(0.75, 0.7);
+  passengerWindow.group.position.set(-(halfWidthAt(PASSENGER_SEAT_Z) - 0.01), 1.55, PASSENGER_SEAT_Z);
   passengerWindow.group.rotation.y = Math.PI / 2;
   group.add(passengerWindow.group);
+  const passengerPoleA = buildStanchionPole(1.9);
+  passengerPoleA.position.set(-(halfWidthAt(PASSENGER_SEAT_Z) - 0.05), 0, PASSENGER_SEAT_Z - 0.5);
+  const passengerPoleB = buildStanchionPole(1.9);
+  passengerPoleB.position.set(-(halfWidthAt(PASSENGER_SEAT_Z) - 0.05), 0, PASSENGER_SEAT_Z + 0.5);
+  group.add(passengerPoleA, passengerPoleB);
 
   // --- 車窓（外に人影, z=-9, 右壁） ---
   const WINDOW_FIGURE_Z = -9;
-  const windowFigureProp = buildTrainWindow(0.6, 0.45);
-  windowFigureProp.group.position.set(halfWidthAt(WINDOW_FIGURE_Z) - 0.01, 1.4, WINDOW_FIGURE_Z);
+  const windowFigureProp = buildTrainWindow(0.78, 0.72);
+  windowFigureProp.group.position.set(halfWidthAt(WINDOW_FIGURE_Z) - 0.01, 1.55, WINDOW_FIGURE_Z);
   windowFigureProp.group.rotation.y = -Math.PI / 2;
   group.add(windowFigureProp.group);
   const outsideFigure = buildTrainPassengerFigure();
   outsideFigure.scale.set(0.4, 0.4, 0.15);
-  outsideFigure.position.set(halfWidthAt(WINDOW_FIGURE_Z) + 0.3, 0.9, WINDOW_FIGURE_Z);
+  outsideFigure.position.set(halfWidthAt(WINDOW_FIGURE_Z) + 0.3, 1.1, WINDOW_FIGURE_Z);
   outsideFigure.visible = false;
   group.add(outsideFigure);
   let windowFigureHiddenByProximity = false;
 
   // --- 車窓（反射に人影, z=-12, 左壁） ---
   const WINDOW_REFLECT_Z = -12;
-  const windowReflectProp = buildTrainWindow(0.6, 0.45);
-  windowReflectProp.group.position.set(-(halfWidthAt(WINDOW_REFLECT_Z) - 0.01), 1.4, WINDOW_REFLECT_Z);
+  const windowReflectProp = buildTrainWindow(0.78, 0.72);
+  windowReflectProp.group.position.set(-(halfWidthAt(WINDOW_REFLECT_Z) - 0.01), 1.55, WINDOW_REFLECT_Z);
   windowReflectProp.group.rotation.y = Math.PI / 2;
   group.add(windowReflectProp.group);
   const reflectFigure = buildTrainPassengerFigure();
@@ -173,39 +186,59 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
   anotherPassenger.visible = false;
   group.add(anotherPassenger);
 
-  // --- 一般の座席列（装飾, 両壁に反復配置） ---
-  const genericSeatSkipZRanges: [number, number][] = [
-    [8, 10],
-    [2, 4],
-    [-1, 1],
-    [-4, -2],
-    [-7, -5],
-    [-10, -8],
-    [-13, -11],
-    [-23.4, -21],
-  ];
-  let seatSide: 1 | -1 = 1;
-  for (let z = 10.5; z >= -14; z -= 1.3) {
-    const skipped = genericSeatSkipZRanges.some(([lo, hi]) => z >= lo && z <= hi);
-    if (!skipped) {
-      const hw = halfWidthAt(z);
-      const bench = buildTrainSeatBench(0.9);
-      const window = buildTrainWindow(0.55, 0.42);
-      if (seatSide === 1) {
-        bench.position.set(hw - 0.22, 0, z);
-        bench.rotation.y = -Math.PI / 2;
-        window.group.position.set(hw - 0.01, 1.5, z);
-        window.group.rotation.y = -Math.PI / 2;
-      } else {
-        bench.position.set(-(hw - 0.22), 0, z);
-        bench.rotation.y = Math.PI / 2;
-        window.group.position.set(-(hw - 0.01), 1.5, z);
-        window.group.rotation.y = Math.PI / 2;
-      }
-      group.add(bench, window.group);
-    }
-    seatSide = seatSide === 1 ? -1 : 1;
+  // --- 一般のロングシート（装飾, 両壁に連続配置）。
+  // 実際の通勤電車のように、短い座席を間隔を空けて並べるのではなく、
+  // 仕切り板付きの長いベンチシート＋大きな車窓を連続させてリアルさを出す。
+  // 専用異変プロップが既に占めているゾーンだけを避けて配置する。
+  function addBenchRun(side: 1 | -1, centerZ: number, length: number) {
+    const hw = halfWidthAt(centerZ);
+    const divisions = Math.max(2, Math.round(length / 0.9));
+    const bench = buildTrainBenchRun(length, divisions);
+    const win = buildTrainWindow(length - 0.25, 0.72);
+    const poleA = buildStanchionPole(1.9);
+    const poleB = buildStanchionPole(1.9);
+    const x = side === 1 ? hw - 0.22 : -(hw - 0.22);
+    const xWin = side === 1 ? hw - 0.01 : -(hw - 0.01);
+    const xPole = side === 1 ? hw - 0.05 : -(hw - 0.05);
+    const rotY = side === 1 ? -Math.PI / 2 : Math.PI / 2;
+    bench.position.set(x, 0, centerZ);
+    bench.rotation.y = rotY;
+    win.group.position.set(xWin, 1.55, centerZ);
+    win.group.rotation.y = rotY;
+    poleA.position.set(xPole, 0, centerZ - length / 2);
+    poleB.position.set(xPole, 0, centerZ + length / 2);
+    group.add(bench, win.group, poleA, poleB);
   }
+
+  // 右壁（AD_Z/PRIORITY_Z/WINDOW_FIGURE_Zの専用ゾーンを避ける）
+  addBenchRun(1, 8.65, 3.3);
+  addBenchRun(1, 0.4, 2.0);
+  addBenchRun(1, -6.0, 3.6);
+  addBenchRun(1, -13.2, 4.2);
+  addBenchRun(1, -18.0, 4.8);
+
+  // 左壁（ROUTE_MAP_Z/BUTTON_Z/PASSENGER_SEAT_Z/WINDOW_REFLECT_Zの専用ゾーンを避ける）
+  addBenchRun(-1, 6.0, 3.0);
+  addBenchRun(-1, 2.0, 2.8);
+  addBenchRun(-1, -3.0, 3.4);
+  addBenchRun(-1, -9.0, 3.4);
+  addBenchRun(-1, -15.5, 4.0);
+  addBenchRun(-1, -19.0, 3.0);
+
+  // --- ドア付近の立席スペースに握り棒 ---
+  for (const z of [11, -21.5]) {
+    const hw = halfWidthAt(z);
+    const poleR = buildStanchionPole(1.9);
+    poleR.position.set(hw - 0.3, 0, z);
+    const poleL = buildStanchionPole(1.9);
+    poleL.position.set(-(hw - 0.3), 0, z);
+    group.add(poleR, poleL);
+  }
+
+  // --- 天井中央の蛍光灯パネル ---
+  const lightStrip = buildCeilingLightStrip(Z_MAX - Z_MIN - 8);
+  lightStrip.position.set(0, 2.36, (Z_MAX + Z_MIN) / 2 - 2);
+  group.add(lightStrip);
 
   // --- 車内沿いの案内矢印（8番出口のように密度を作る） ---
   const arrowTextures = [makeArrowSignTexture("right"), makeArrowSignTexture("left")];

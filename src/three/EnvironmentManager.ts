@@ -1681,8 +1681,8 @@ export function makePrioritySeatTexture(anomaly: boolean): THREE.CanvasTexture {
 /** ベンチシート（座席）。lengthで長さを指定する */
 export function buildTrainSeatBench(length: number): THREE.Group {
   const group = new THREE.Group();
-  const cushionMat = new THREE.MeshStandardMaterial({ color: 0x5a7a52, roughness: 0.9 });
-  const frameMat = new THREE.MeshStandardMaterial({ color: 0x8a8880, roughness: 0.4, metalness: 0.6 });
+  const cushionMat = new THREE.MeshStandardMaterial({ color: 0x1c2a44, roughness: 0.85 });
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0xd8d4c4, roughness: 0.4, metalness: 0.3 });
   const seat = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.08, length), cushionMat);
   seat.position.y = 0.42;
   const back = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, length), cushionMat);
@@ -1691,6 +1691,56 @@ export function buildTrainSeatBench(length: number): THREE.Group {
   frame.position.y = 0.2;
   group.add(seat, back, frame);
   return group;
+}
+
+/**
+ * 連続したロングシート（日本の通勤電車らしい、仕切り板付きの長い座席）。
+ * lengthで全体の長さ、divisionsで座席の区画数（仕切り板の数-1）を指定する。
+ */
+export function buildTrainBenchRun(length: number, divisions: number): THREE.Group {
+  const group = new THREE.Group();
+  const cushionMat = new THREE.MeshStandardMaterial({ color: 0x1c2a44, roughness: 0.85 });
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0xd8d4c4, roughness: 0.4, metalness: 0.3 });
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.08, length), cushionMat);
+  seat.position.y = 0.42;
+  const back = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.46, length), cushionMat);
+  back.position.set(-0.17, 0.66, 0);
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.38, length - 0.04), frameMat);
+  frame.position.y = 0.2;
+  group.add(seat, back, frame);
+
+  const dividerMat = new THREE.MeshStandardMaterial({ color: 0xe8e4d8, roughness: 0.5 });
+  for (let i = 0; i <= divisions; i++) {
+    const z = -length / 2 + (i * length) / divisions;
+    const divider = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.56, 0.025), dividerMat);
+    divider.position.set(-0.03, 0.68, z);
+    group.add(divider);
+  }
+  return group;
+}
+
+/** 床から天井近くまで伸びるステンレスのスタンションポール（握り棒） */
+export function buildStanchionPole(height: number): THREE.Group {
+  const group = new THREE.Group();
+  const poleMat = new THREE.MeshStandardMaterial({ color: 0xc9cdd0, roughness: 0.2, metalness: 0.85 });
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, height, 10), poleMat);
+  pole.position.y = height / 2;
+  const topRing = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.008, 6, 12), poleMat);
+  topRing.rotation.x = Math.PI / 2;
+  topRing.position.y = height - 0.05;
+  group.add(pole, topRing);
+  return group;
+}
+
+/** 天井中央に通る蛍光灯の光るパネル。lengthで長さを指定する */
+export function buildCeilingLightStrip(length: number): THREE.Mesh {
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0xf4f8ff,
+    emissive: 0xdfe8ff,
+    emissiveIntensity: 1.1,
+    roughness: 0.6,
+  });
+  return new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.04, length), mat);
 }
 
 export interface StrapRowHandle {
