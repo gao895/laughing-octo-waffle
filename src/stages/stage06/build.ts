@@ -112,7 +112,7 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
   const PRIORITY_Z = -3;
   const prioritySeat = buildTrainSeatBench(0.9);
   prioritySeat.position.set(halfWidthAt(PRIORITY_Z) - 0.22, 0, PRIORITY_Z);
-  prioritySeat.rotation.y = -Math.PI / 2;
+  prioritySeat.rotation.y = Math.PI;
   group.add(prioritySeat);
   const prioritySignTexNormal = makePrioritySeatTexture(false);
   const prioritySignTexAnomaly = makePrioritySeatTexture(true);
@@ -135,7 +135,6 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
   const PASSENGER_SEAT_Z = -6;
   const passengerSeat = buildTrainSeatBench(0.9);
   passengerSeat.position.set(-(halfWidthAt(PASSENGER_SEAT_Z) - 0.22), 0, PASSENGER_SEAT_Z);
-  passengerSeat.rotation.y = Math.PI / 2;
   group.add(passengerSeat);
   const extraPassenger = buildTrainPassengerFigure();
   extraPassenger.scale.setScalar(0.92);
@@ -200,11 +199,15 @@ export function buildStage06(scene: THREE.Scene, lighting: LightingManager, audi
     const x = side === 1 ? hw - 0.22 : -(hw - 0.22);
     const xWin = side === 1 ? hw - 0.01 : -(hw - 0.01);
     const xPole = side === 1 ? hw - 0.05 : -(hw - 0.05);
-    const rotY = side === 1 ? -Math.PI / 2 : Math.PI / 2;
+    // buildTrainBenchRunは奥行き(length)がすでにローカルZ軸方向に沿っているため、
+    // 壁沿い(ワールドZ軸方向)に向けるには回転させず、背もたれの向きだけを
+    // 180度反転させて壁側に来るようにする（窓などの平面プロップとは逆の扱い）。
+    const benchRotY = side === 1 ? Math.PI : 0;
+    const winRotY = side === 1 ? -Math.PI / 2 : Math.PI / 2;
     bench.position.set(x, 0, centerZ);
-    bench.rotation.y = rotY;
+    bench.rotation.y = benchRotY;
     win.group.position.set(xWin, 1.55, centerZ);
-    win.group.rotation.y = rotY;
+    win.group.rotation.y = winRotY;
     poleA.position.set(xPole, 0, centerZ - length / 2);
     poleB.position.set(xPole, 0, centerZ + length / 2);
     group.add(bench, win.group, poleA, poleB);
